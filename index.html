@@ -11,27 +11,39 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="css/styles-v2.css">
   <link rel="stylesheet" href="css/modern-v4.css">
+  <link rel="stylesheet" href="css/app-v6.css">
 </head>
 <body>
-  <main class="app-shell">
-    <section id="loading" class="screen centered"><p>Trainingsdaten werden geladen …</p></section>
-    <section id="login-screen" class="screen hidden"><div class="card login-card"><p class="eyebrow">PRIVATE TRAINING</p><h1>GYM</h1><p class="muted">Anmeldung mit deinem Supabase-Konto.</p><form id="login-form"><label>E-Mail<input id="email" type="email" autocomplete="username" value="Omm.Dav@gmail.com" required></label><label>Passwort<input id="password" type="password" autocomplete="current-password" required></label><button type="submit">Anmelden</button><p id="login-error" class="error" role="alert"></p></form></div></section>
-    <section id="dashboard" class="screen hidden">
-      <header class="topbar"><div><p class="eyebrow">DEIN PLAN</p><h1>Proportion & Muskelaufbau</h1></div><div class="header-actions"><button id="theme-toggle" class="icon-button" aria-label="Darstellung wechseln">◐</button><button id="logout" class="secondary">Abmelden</button></div></header>
-      <section class="hero-card"><div class="hero-topline"><div><p class="muted">Als Nächstes</p><h2 id="next-workout">Training A</h2><p id="next-date" class="next-date"></p></div><span id="connection-status" class="status-pill">Online</span></div><p>Der Termin bleibt verbindlich, bis du ihn absolvierst oder bewusst verschiebst.</p><button id="start-workout">Training öffnen</button></section>
-      <section class="stats-grid" aria-label="Fortschritt"><article class="stat-card"><span class="stat-label">Abgeschlossen</span><strong id="completed-count">0</strong><span>Einheiten</span></article><article class="stat-card"><span class="stat-label">Serie</span><strong id="streak-count">0</strong><span>Wochen</span></article><article class="stat-card"><span class="stat-label">Diese Woche</span><strong id="week-count">0</strong><span>Trainings</span></article></section>
-      <section class="calendar-section"><div class="section-heading"><div><p class="eyebrow">KALENDER</p><h2 id="calendar-title"></h2></div><div class="calendar-actions"><button id="prev-month" class="icon-button" aria-label="Vorheriger Monat">‹</button><button id="next-month" class="icon-button" aria-label="Nächster Monat">›</button></div></div><p id="calendar-help" class="calendar-help">Vorgeschlagen: Dienstag, Donnerstag und Samstag. Geplante Einheit antippen und danach den neuen Tag.</p><div class="calendar-card"><div class="weekday-row"><span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span></div><div id="calendar-grid" class="calendar-grid"></div></div></section>
-      <section><div class="section-heading"><h2>Trainingsfolge</h2><span class="pill">A → B → A → B</span></div><div id="workout-list" class="workout-grid"></div></section>
+<main class="app-shell">
+  <section id="loading" class="screen centered"><p>Trainingsdaten werden geladen …</p></section>
+  <section id="login-screen" class="screen hidden"><div class="card login-card"><p class="eyebrow">PRIVATE TRAINING</p><h1>GYM</h1><form id="login-form"><label>E-Mail<input id="email" type="email" value="Omm.Dav@gmail.com" autocomplete="username" required></label><label>Passwort<input id="password" type="password" autocomplete="current-password" required></label><button type="submit">Anmelden</button><p id="login-error" class="error"></p></form></div></section>
+  <section id="dashboard" class="screen hidden">
+    <header class="topbar"><div><p class="eyebrow">DEIN PLAN</p><h1>Dave</h1></div><div class="header-actions"><button id="theme-toggle" class="icon-button" aria-label="Darstellung wechseln">◐</button><button id="logout" class="secondary">Abmelden</button><span id="connection-status" class="status-pill">Online</span></div></header>
+
+    <section id="tab-today" class="tab-panel active">
+      <section class="hero-card"><div class="hero-topline"><div><p class="muted">Als Nächstes</p><h2 id="next-workout">Training A</h2><p id="next-date" class="next-date"></p></div></div><p>Der Termin bleibt bestehen, bis du ihn absolvierst oder bewusst verschiebst.</p><button id="start-workout">Training öffnen</button></section>
+      <section class="quick-grid"><button id="open-weight" class="quick-card"><small>Gewicht</small><strong id="latest-weight">Noch kein Gewicht</strong></button><button class="quick-card" data-tab-jump="calendar"><small>Planung</small><strong>Kalender öffnen</strong></button></section>
+      <section class="stats-grid"><article class="stat-card"><span class="stat-label">Abgeschlossen</span><strong id="completed-count">0</strong><span>Einheiten</span></article><article class="stat-card"><span class="stat-label">Serie</span><strong id="streak-count">0</strong><span>Wochen</span></article><article class="stat-card"><span class="stat-label">Diese Woche</span><strong id="week-count">0</strong><span>Trainings</span></article></section>
+      <section><div class="section-heading"><h2>Trainingsfolge</h2><span class="pill">A → B</span></div><div id="workout-list" class="workout-grid"></div></section>
     </section>
-  </main>
-  <dialog id="workout-dialog">
-    <div class="dialog-head"><div><p class="eyebrow">TRAINING</p><h2 id="dialog-title"></h2></div><button id="close-dialog" class="secondary">Schließen</button></div>
-    <div class="timer-panel"><p id="workout-timer" class="timer">00:00</p><div class="timer-actions"><button id="timer-toggle">Training starten</button></div></div>
-    <p class="dialog-instruction">Jede Übung als erledigt oder nicht geschafft markieren. Offline-Daten werden später synchronisiert.</p>
-    <div id="exercise-list" class="exercise-list"></div>
-    <div class="dialog-footer"><p id="completion-hint" class="completion-hint"></p><button id="complete-workout" class="complete-button" disabled>Training speichern</button></div>
-  </dialog>
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script type="module" src="js/app-v5.js"></script>
-</body>
-</html>
+
+    <section id="tab-calendar" class="tab-panel">
+      <div class="section-heading"><div><p class="eyebrow">PLANUNG</p><h2 id="calendar-title"></h2></div><div class="calendar-actions"><button id="prev-month" class="icon-button">‹</button><button id="next-month" class="icon-button">›</button></div></div>
+      <p id="calendar-help" class="calendar-help">Geplante Einheit antippen und danach den neuen Tag auswählen.</p>
+      <div class="calendar-card"><div class="weekday-row"><span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span></div><div id="calendar-grid" class="calendar-grid"></div></div>
+    </section>
+
+    <section id="tab-progress" class="tab-panel"><p class="eyebrow">FORTSCHRITT</p><h2>Messungen</h2><div class="quick-grid"><button id="open-weight-2" class="quick-card"><small>Gewicht erfassen</small><strong>Neue Messung</strong></button><button class="quick-card" disabled><small>Umfänge</small><strong>Kommt als Nächstes</strong></button></div><p class="muted">Brust-, Bauch- und Armumfang sowie private Fortschrittsfotos folgen im nächsten Ausbau.</p></section>
+  </section>
+</main>
+
+<nav class="bottom-nav" aria-label="Navigation"><button class="active" data-tab="today"><span>⌂</span>Heute</button><button data-tab="calendar"><span>▦</span>Kalender</button><button data-tab="progress"><span>↗</span>Fortschritt</button></nav>
+
+<dialog id="workout-dialog"><div class="dialog-head"><div><p class="eyebrow">TRAINING</p><h2 id="dialog-title"></h2></div><button id="close-dialog" class="secondary">Schließen</button></div><div class="timer-panel"><p id="workout-timer" class="timer">00:00</p><button id="timer-toggle">Training starten</button></div><p class="dialog-instruction">Jede Übung als erledigt oder nicht geschafft markieren.</p><div id="exercise-list" class="exercise-list"></div><div class="dialog-footer"><p id="completion-hint"></p><button id="complete-workout" disabled>Training speichern</button></div></dialog>
+
+<dialog id="weight-dialog"><div class="dialog-head"><div><p class="eyebrow">MESSUNG</p><h2>Gewicht erfassen</h2></div><button id="close-weight" class="secondary">Schließen</button></div><div class="weight-form"><label>Gewicht in kg<input id="weight-input" type="text" inputmode="decimal" placeholder="84,0"></label><label>Toilette<select id="weight-toilet"><option value="unknown">Keine Angabe</option><option value="before">Vorher</option><option value="after">Nachher</option></select></label><label>Essen<select id="weight-food"><option value="unknown">Keine Angabe</option><option value="fasted">Nüchtern</option><option value="ate">Bereits gegessen</option></select></label><label>Späte Mahlzeit<select id="weight-late"><option value="unknown">Keine Angabe</option><option value="none">Keine</option><option value="small">Klein</option><option value="normal">Normal</option><option value="large">Groß</option></select></label><label class="check-row"><input id="weight-unusual" type="checkbox">Ungewöhnliche Wiegezeit</label><label class="check-row"><input id="weight-trained" type="checkbox">Gestern trainiert</label><p id="weight-status" class="error"></p><button id="save-weight">Speichern</button></div></dialog>
+
+<div id="toast" class="toast" role="status"></div>
+<script type="module" src="js/app-v6.js"></script>
+<script>document.addEventListener('click',e=>{const j=e.target.closest('[data-tab-jump]');if(!j)return;document.querySelector(`[data-tab="${j.dataset.tabJump}"]`)?.click();document.querySelector('#open-weight-2')?.addEventListener('click',()=>document.querySelector('#open-weight')?.click());});</script>
+</body></html>
