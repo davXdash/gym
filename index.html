@@ -3,37 +3,92 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#f3f1ea">
+  <meta name="theme-color" content="#f5f6f3">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="GYM">
   <title>GYM</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="css/styles-v2.css">
-  <link rel="stylesheet" href="css/modern-v4.css">
-  <link rel="stylesheet" href="css/app-v6.css">
+  <link rel="stylesheet" href="css/app-v9.css">
   <style>body:not(:has(#dashboard:not(.hidden))) .bottom-nav{display:none}</style>
 </head>
 <body>
 <main class="app-shell">
   <section id="loading" class="screen centered"><p>Trainingsdaten werden geladen …</p></section>
-  <section id="login-screen" class="screen hidden"><div class="card login-card"><p class="eyebrow">PRIVATE TRAINING</p><h1>GYM</h1><form id="login-form"><label>E-Mail<input id="email" type="email" value="Omm.Dav@gmail.com" autocomplete="username" required></label><label>Passwort<input id="password" type="password" autocomplete="current-password" required></label><button type="submit">Anmelden</button><p id="login-error" class="error"></p></form></div></section>
+
+  <section id="login-screen" class="screen hidden">
+    <div class="login-card">
+      <p class="eyebrow">PRIVATE TRAINING</p><h1>GYM</h1>
+      <form id="login-form">
+        <label>E-Mail<input id="email" type="email" value="Omm.Dav@gmail.com" autocomplete="username" required></label>
+        <label>Passwort<input id="password" type="password" autocomplete="current-password" required></label>
+        <button type="submit">Anmelden</button><p id="login-error" class="error"></p>
+      </form>
+    </div>
+  </section>
+
   <section id="dashboard" class="screen hidden">
-    <header class="topbar"><div><p class="eyebrow">DEIN PLAN</p><h1>Dave</h1></div><div class="header-actions"><button id="theme-toggle" class="icon-button" aria-label="Darstellung wechseln">◐</button><button id="logout" class="secondary">Abmelden</button><span id="connection-status" class="status-pill">Online</span></div></header>
+    <header class="topbar">
+      <div class="topbar-actions"><button id="menu-toggle" class="icon-button" aria-label="Menü öffnen">☰</button></div>
+      <div class="topbar-title"><p>DEIN TRAINING</p><h1>Dave</h1></div>
+      <div class="topbar-actions"><button id="theme-toggle" class="icon-button" aria-label="Darstellung wechseln">◐</button></div>
+    </header>
+    <div class="status-line"><span id="connection-status" class="status-pill">Online</span></div>
+    <div id="error-stack" class="error-stack" aria-live="polite"></div>
+
     <section id="tab-today" class="tab-panel active">
-      <section class="hero-card"><div class="hero-topline"><div><p class="muted">Als Nächstes</p><h2 id="next-workout">Training A</h2><p id="next-date" class="next-date"></p></div></div><p>Der Termin bleibt bestehen, bis du ihn absolvierst oder bewusst verschiebst.</p><button id="start-workout">Training öffnen</button></section>
-      <section class="quick-grid"><button id="open-weight" class="quick-card"><small>Gewicht</small><strong id="latest-weight">Noch kein Gewicht</strong></button><button class="quick-card" data-tab-jump="calendar"><small>Planung</small><strong>Kalender öffnen</strong></button></section>
-      <section class="stats-grid"><article class="stat-card"><span class="stat-label">Abgeschlossen</span><strong id="completed-count">0</strong><span>Einheiten</span></article><article class="stat-card"><span class="stat-label">Serie</span><strong id="streak-count">0</strong><span>Wochen</span></article><article class="stat-card"><span class="stat-label">Diese Woche</span><strong id="week-count">0</strong><span>Trainings</span></article></section>
-      <section><div class="section-heading"><h2>Trainingsfolge</h2><span class="pill">A → B</span></div><div id="workout-list" class="workout-grid"></div></section>
+      <section class="home-calendar">
+        <div class="section-heading">
+          <div><h2 data-calendar-title></h2><p>Plane deine Einheiten verbindlich vor.</p></div>
+          <div class="calendar-actions"><button class="icon-button" data-prev-month>‹</button><button class="icon-button" data-next-month>›</button></div>
+        </div>
+        <div class="calendar-card">
+          <div class="weekday-row"><span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span></div>
+          <div class="calendar-grid" data-calendar-grid></div>
+        </div>
+        <p class="calendar-help">Training antippen, um es zu verschieben. Freien Tag antippen, um A oder B einzuplanen.</p>
+      </section>
+
+      <section class="hero-card">
+        <p class="kicker">Als Nächstes</p><h2 id="next-workout">Training A</h2><p id="next-date" class="next-date"></p>
+        <div class="hero-actions"><button id="start-workout" class="primary-button">Training öffnen</button><button id="change-next" class="secondary-button">Termin ändern</button></div>
+      </section>
+
+      <section class="quick-grid"><button id="open-weight" class="quick-card"><small>Gewicht</small><strong id="latest-weight">Noch kein Gewicht</strong></button><button class="quick-card" data-tab="progress"><small>Fortschritt</small><strong>Messungen öffnen</strong></button></section>
+      <section class="stats-grid"><article class="stat-card"><span>Abgeschlossen</span><strong id="completed-count">0</strong><span>Einheiten</span></article><article class="stat-card"><span>Serie</span><strong id="streak-count">0</strong><span>Wochen</span></article><article class="stat-card"><span>Diese Woche</span><strong id="week-count">0</strong><span>Trainings</span></article></section>
+      <section><div class="section-heading"><div><h2>Trainingsfolge</h2><p>A und B laufen fortlaufend.</p></div></div><div id="workout-list" class="workout-grid"></div></section>
     </section>
-    <section id="tab-calendar" class="tab-panel"><div class="section-heading"><div><p class="eyebrow">PLANUNG</p><h2 id="calendar-title"></h2></div><div class="calendar-actions"><button id="prev-month" class="icon-button">‹</button><button id="next-month" class="icon-button">›</button></div></div><p id="calendar-help" class="calendar-help">Geplante Einheit antippen und danach den neuen Tag auswählen.</p><div class="calendar-card"><div class="weekday-row"><span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span></div><div id="calendar-grid" class="calendar-grid"></div></div></section>
-    <section id="tab-progress" class="tab-panel"><p class="eyebrow">FORTSCHRITT</p><h2>Messungen</h2><div class="quick-grid"><button id="open-weight-2" class="quick-card"><small>Gewicht erfassen</small><strong>Neue Messung</strong></button><button class="quick-card" disabled><small>Umfänge</small><strong>Kommt als Nächstes</strong></button></div><p class="muted">Brust-, Bauch- und Armumfang sowie private Fortschrittsfotos folgen im nächsten Ausbau.</p></section>
+
+    <section id="tab-calendar" class="tab-panel">
+      <div class="section-heading"><div><h2 data-calendar-title></h2><p>Tippe einen Termin und danach den neuen Tag.</p></div><div class="calendar-actions"><button class="icon-button" data-prev-month>‹</button><button class="icon-button" data-next-month>›</button></div></div>
+      <div class="calendar-card"><div class="weekday-row"><span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span></div><div class="calendar-grid" data-calendar-grid></div></div>
+      <p class="calendar-help">Training antippen, um es zu verschieben. Freien Tag antippen, um A oder B einzuplanen.</p>
+    </section>
+
+    <section id="tab-progress" class="tab-panel">
+      <div class="section-heading"><div><h2>Fortschritt</h2><p>Gewicht und später Körpermaße.</p></div></div>
+      <div class="quick-grid"><button id="open-weight-2" class="quick-card"><small>Gewicht erfassen</small><strong>Neue Messung</strong></button><button class="quick-card" disabled><small>Umfänge</small><strong>Folgt als Nächstes</strong></button></div>
+    </section>
   </section>
 </main>
-<nav class="bottom-nav" aria-label="Navigation"><button class="active" data-tab="today"><span>⌂</span>Heute</button><button data-tab="calendar"><span>▦</span>Kalender</button><button data-tab="progress"><span>↗</span>Fortschritt</button></nav>
-<dialog id="workout-dialog"><div class="dialog-head"><div><p class="eyebrow">TRAINING</p><h2 id="dialog-title"></h2></div><button id="close-dialog" class="secondary">Schließen</button></div><div class="timer-panel"><p id="workout-timer" class="timer">00:00</p><button id="timer-toggle">Training starten</button></div><p class="dialog-instruction">Jede Übung als erledigt oder nicht geschafft markieren.</p><div id="exercise-list" class="exercise-list"></div><div class="dialog-footer"><p id="completion-hint"></p><button id="complete-workout" disabled>Training speichern</button></div></dialog>
-<dialog id="weight-dialog"><div class="dialog-head"><div><p class="eyebrow">MESSUNG</p><h2>Gewicht erfassen</h2></div><button id="close-weight" class="secondary">Schließen</button></div><div class="weight-form"><label>Gewicht in kg<input id="weight-input" type="text" inputmode="decimal" placeholder="84,0"></label><label>Toilette<select id="weight-toilet"><option value="unknown">Keine Angabe</option><option value="before">Vorher</option><option value="after">Nachher</option></select></label><label>Essen<select id="weight-food"><option value="unknown">Keine Angabe</option><option value="fasted">Nüchtern</option><option value="ate">Bereits gegessen</option></select></label><label>Späte Mahlzeit<select id="weight-late"><option value="unknown">Keine Angabe</option><option value="none">Keine</option><option value="small">Klein</option><option value="normal">Normal</option><option value="large">Groß</option></select></label><label class="check-row"><input id="weight-unusual" type="checkbox">Ungewöhnliche Wiegezeit</label><label class="check-row"><input id="weight-trained" type="checkbox">Gestern trainiert</label><p id="weight-status" class="error"></p><button id="save-weight">Speichern</button></div></dialog>
-<div id="toast" class="toast" role="status"></div>
-<script type="module" src="js/app-v7.js"></script>
-<script>document.addEventListener('click',e=>{const j=e.target.closest('[data-tab-jump]');if(j)document.querySelector(`[data-tab="${j.dataset.tabJump}"]`)?.click();if(e.target.closest('#open-weight-2'))document.querySelector('#open-weight')?.click();});</script>
+
+<div id="drawer-backdrop" class="drawer-backdrop hidden"></div>
+<aside id="drawer" class="drawer" aria-label="Menü">
+  <div class="drawer-head"><div><small>GYM</small><h2>Dave</h2></div><button id="drawer-close" class="icon-button">×</button></div>
+  <nav><button data-drawer-tab="today" class="active">Heute</button><button data-drawer-tab="calendar">Kalender</button><button data-drawer-tab="progress">Fortschritt</button><button id="logout">Abmelden</button></nav>
+</aside>
+
+<nav class="bottom-nav" aria-label="Navigation">
+  <button class="active" data-tab="today" aria-label="Heute"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-6h5v6"/></svg><span>Heute</span></button>
+  <button data-tab="calendar" aria-label="Kalender"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span>Kalender</span></button>
+  <button data-tab="progress" aria-label="Fortschritt"><svg viewBox="0 0 24 24"><path d="M4 19V9M10 19V5M16 19v-8M22 19V3"/></svg><span>Fortschritt</span></button>
+</nav>
+
+<dialog id="workout-dialog"><div class="dialog-head"><div><small>TRAINING</small><h2 id="dialog-title"></h2></div><button id="close-dialog">Schließen</button></div><div class="timer-panel"><p id="workout-timer" class="timer">00:00</p><button id="timer-toggle" class="secondary-button">Training starten</button></div><div id="exercise-list" class="exercise-list"></div></dialog>
+
+<dialog id="planning-dialog"><div class="dialog-head"><div><small>TERMIN PLANEN</small><h2 id="planning-date"></h2></div><button id="planning-close">Schließen</button></div><p>Welche Einheit möchtest du an diesem Tag einplanen?</p><div class="planning-sheet-actions"><button data-plan-code="A">Training A</button><button data-plan-code="B">Training B</button></div></dialog>
+
+<dialog id="weight-dialog"><div class="dialog-head"><div><small>MESSUNG</small><h2>Gewicht erfassen</h2></div><button id="close-weight">Schließen</button></div><div class="weight-form"><label>Gewicht in kg<input id="weight-input" type="text" inputmode="decimal" placeholder="84,0"></label><label>Toilette<select id="weight-toilet"><option value="unknown">Keine Angabe</option><option value="before">Vorher</option><option value="after">Nachher</option></select></label><label>Essen<select id="weight-food"><option value="unknown">Keine Angabe</option><option value="fasted">Nüchtern</option><option value="ate">Bereits gegessen</option></select></label><label>Späte Mahlzeit<select id="weight-late"><option value="unknown">Keine Angabe</option><option value="none">Keine</option><option value="small">Klein</option><option value="normal">Normal</option><option value="large">Groß</option></select></label><label class="check-row"><input id="weight-unusual" type="checkbox">Ungewöhnliche Wiegezeit</label><label class="check-row"><input id="weight-trained" type="checkbox">Gestern trainiert</label><p id="weight-status" class="error"></p><button id="save-weight" class="primary-button">Speichern</button></div></dialog>
+
+<script type="module" src="js/app-v9.js"></script>
 </body></html>
