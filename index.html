@@ -1,15 +1,16 @@
 <!doctype html>
-<html lang="de">
+<html lang="de" data-theme="light">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#f4f1eb">
+  <meta name="theme-color" content="#f4f6f8">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="GYM">
   <title>GYM</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="css/styles-v2.css">
+  <link rel="stylesheet" href="css/modern-v3.css">
 </head>
 <body>
   <main class="app-shell">
@@ -25,10 +26,13 @@
       </div>
     </section>
     <section id="dashboard" class="screen hidden">
-      <header class="topbar"><div><p class="eyebrow">DEIN PLAN</p><h1>Oberkörperaufbau</h1></div><button id="logout" class="secondary">Abmelden</button></header>
+      <header class="topbar">
+        <div><p class="eyebrow">DEIN PLAN</p><h1>Oberkörperaufbau</h1></div>
+        <div class="header-actions"><button id="theme-toggle" class="icon-button" aria-label="Darstellung wechseln">◐</button><button id="logout" class="secondary">Abmelden</button></div>
+      </header>
       <section class="hero-card">
-        <div class="hero-topline"><div><p class="muted">Als Nächstes</p><h2 id="next-workout">Training A</h2></div><span id="connection-status" class="status-pill">Online</span></div>
-        <p id="rotation-note">Die Reihenfolge läuft fort. Ausgefallene Tage überspringen kein Training.</p><button id="start-workout">Training öffnen</button>
+        <div class="hero-topline"><div><p class="muted">Als Nächstes</p><h2 id="next-workout">Training A</h2><p id="next-date" class="next-date"></p></div><span id="connection-status" class="status-pill">Online</span></div>
+        <p>Die Rotation bleibt erhalten. Ein ausgelassener Termin überspringt keine Einheit.</p><button id="start-workout">Training öffnen</button>
       </section>
       <section class="stats-grid" aria-label="Fortschritt">
         <article class="stat-card"><span class="stat-label">Abgeschlossen</span><strong id="completed-count">0</strong><span>Einheiten</span></article>
@@ -36,16 +40,20 @@
         <article class="stat-card"><span class="stat-label">Diese Woche</span><strong id="week-count">0</strong><span>Trainings</span></article>
       </section>
       <section class="calendar-section">
-        <div class="section-heading"><div><p class="eyebrow">KALENDER</p><h2 id="calendar-title">August 2026</h2></div><div class="calendar-actions"><button id="prev-month" class="icon-button" aria-label="Vorheriger Monat">‹</button><button id="next-month" class="icon-button" aria-label="Nächster Monat">›</button></div></div>
+        <div class="section-heading"><div><p class="eyebrow">KALENDER</p><h2 id="calendar-title"></h2></div><div class="calendar-actions"><button id="prev-month" class="icon-button" aria-label="Vorheriger Monat">‹</button><button id="next-month" class="icon-button" aria-label="Nächster Monat">›</button></div></div>
+        <p id="calendar-help" class="calendar-help">Vorgeschlagen: Dienstag, Donnerstag und Samstag. Tippe eine geplante Einheit und danach den neuen Tag an.</p>
         <div class="calendar-card"><div class="weekday-row"><span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span></div><div id="calendar-grid" class="calendar-grid"></div></div>
       </section>
       <section><div class="section-heading"><h2>Trainingsfolge</h2><span class="pill">A → B → A → B</span></div><div id="workout-list" class="workout-grid"></div></section>
     </section>
   </main>
   <dialog id="workout-dialog">
-    <div class="dialog-head"><div><p class="eyebrow">TRAINING</p><h2 id="dialog-title"></h2></div><button id="close-dialog" class="secondary">Schließen</button></div>
-    <div id="exercise-list" class="exercise-list"></div><div class="dialog-footer"><button id="complete-workout" class="complete-button">Training abschließen</button></div>
+    <div class="dialog-head"><div><p class="eyebrow">TRAINING</p><h2 id="dialog-title"></h2><p id="workout-timer" class="timer"></p></div><button id="close-dialog" class="secondary">Schließen</button></div>
+    <p class="dialog-instruction">Hake eine Übung erst ab, wenn alle vorgesehenen Arbeitssätze erledigt sind.</p>
+    <div id="exercise-list" class="exercise-list"></div>
+    <div class="dialog-footer"><p id="completion-hint" class="completion-hint"></p><button id="complete-workout" class="complete-button" disabled>Training abschließen</button></div>
   </dialog>
-  <script type="module" src="js/app-v2.js"></script>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="js/app-v3.js"></script>
 </body>
 </html>
