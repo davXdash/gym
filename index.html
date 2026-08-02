@@ -14,24 +14,24 @@
 </head>
 <body>
   <main class="app-shell">
-    <section id="loading" class="screen centered"><p>App wird geladen …</p></section>
+    <section id="loading" class="screen centered"><p>Trainingsdaten werden geladen …</p></section>
     <section id="login-screen" class="screen hidden"><div class="card login-card"><p class="eyebrow">PRIVATE TRAINING</p><h1>GYM</h1><p class="muted">Anmeldung mit deinem Supabase-Konto.</p><form id="login-form"><label>E-Mail<input id="email" type="email" autocomplete="username" value="Omm.Dav@gmail.com" required></label><label>Passwort<input id="password" type="password" autocomplete="current-password" required></label><button type="submit">Anmelden</button><p id="login-error" class="error" role="alert"></p></form></div></section>
     <section id="dashboard" class="screen hidden">
       <header class="topbar"><div><p class="eyebrow">DEIN PLAN</p><h1>Proportion & Muskelaufbau</h1></div><div class="header-actions"><button id="theme-toggle" class="icon-button" aria-label="Darstellung wechseln">◐</button><button id="logout" class="secondary">Abmelden</button></div></header>
-      <section class="hero-card"><div class="hero-topline"><div><p class="muted">Als Nächstes</p><h2 id="next-workout">Training A</h2><p id="next-date" class="next-date"></p></div><span id="connection-status" class="status-pill">Online</span></div><p>Die Reihenfolge bleibt erhalten. Termine dürfen sich verschieben.</p><button id="start-workout">Training öffnen</button></section>
+      <section class="hero-card"><div class="hero-topline"><div><p class="muted">Als Nächstes</p><h2 id="next-workout">Training A</h2><p id="next-date" class="next-date"></p></div><span id="connection-status" class="status-pill">Online</span></div><p>Der Termin bleibt verbindlich, bis du ihn absolvierst oder bewusst verschiebst.</p><button id="start-workout">Training öffnen</button></section>
       <section class="stats-grid" aria-label="Fortschritt"><article class="stat-card"><span class="stat-label">Abgeschlossen</span><strong id="completed-count">0</strong><span>Einheiten</span></article><article class="stat-card"><span class="stat-label">Serie</span><strong id="streak-count">0</strong><span>Wochen</span></article><article class="stat-card"><span class="stat-label">Diese Woche</span><strong id="week-count">0</strong><span>Trainings</span></article></section>
-      <section class="calendar-section"><div class="section-heading"><div><p class="eyebrow">KALENDER</p><h2 id="calendar-title"></h2></div><div class="calendar-actions"><button id="prev-month" class="icon-button" aria-label="Vorheriger Monat">‹</button><button id="next-month" class="icon-button" aria-label="Nächster Monat">›</button></div></div><p id="calendar-help" class="calendar-help">Vorgeschlagen: Dienstag, Donnerstag und Samstag. Geplante Einheit antippen und danach auf den neuen Tag.</p><div class="calendar-card"><div class="weekday-row"><span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span></div><div id="calendar-grid" class="calendar-grid"></div></div></section>
+      <section class="calendar-section"><div class="section-heading"><div><p class="eyebrow">KALENDER</p><h2 id="calendar-title"></h2></div><div class="calendar-actions"><button id="prev-month" class="icon-button" aria-label="Vorheriger Monat">‹</button><button id="next-month" class="icon-button" aria-label="Nächster Monat">›</button></div></div><p id="calendar-help" class="calendar-help">Vorgeschlagen: Dienstag, Donnerstag und Samstag. Geplante Einheit antippen und danach den neuen Tag.</p><div class="calendar-card"><div class="weekday-row"><span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span></div><div id="calendar-grid" class="calendar-grid"></div></div></section>
       <section><div class="section-heading"><h2>Trainingsfolge</h2><span class="pill">A → B → A → B</span></div><div id="workout-list" class="workout-grid"></div></section>
     </section>
   </main>
   <dialog id="workout-dialog">
     <div class="dialog-head"><div><p class="eyebrow">TRAINING</p><h2 id="dialog-title"></h2></div><button id="close-dialog" class="secondary">Schließen</button></div>
-    <div class="timer-panel"><p id="workout-timer" class="timer">00:00</p><div class="timer-actions"><button id="timer-toggle">Training starten / pausieren</button></div></div>
-    <p class="dialog-instruction">Jede Übung als erledigt oder nicht geschafft markieren. Nur ein ausdrücklich gestartetes Training zählt Zeit.</p>
+    <div class="timer-panel"><p id="workout-timer" class="timer">00:00</p><div class="timer-actions"><button id="timer-toggle">Training starten</button></div></div>
+    <p class="dialog-instruction">Jede Übung als erledigt oder nicht geschafft markieren. Offline-Daten werden später synchronisiert.</p>
     <div id="exercise-list" class="exercise-list"></div>
     <div class="dialog-footer"><p id="completion-hint" class="completion-hint"></p><button id="complete-workout" class="complete-button" disabled>Training speichern</button></div>
   </dialog>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script type="module" src="js/app-v4.js"></script>
+  <script type="module" src="js/app-v5.js"></script>
 </body>
 </html>
