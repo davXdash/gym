@@ -7,7 +7,6 @@ declare
   v_plan uuid;
   v_a uuid;
   v_b uuid;
-  v_ex uuid;
   v_date date;
   v_code text := 'A';
   v_counter integer := 0;
@@ -40,7 +39,6 @@ begin
   returning id into v_b;
   if v_b is null then select id into v_b from public.plan_workouts where plan_id=v_plan and code='B'; end if;
 
-  -- Helper data: name, category, equipment, workout, order, sets, min, max, rest, instructions, failure rule, core
   create temporary table if not exists seed_exercises(
     name text, category text, equipment text, workout_code text, pos int, sets int, rep_min int, rep_max int, rest int, instructions text, failure_rule text, core boolean
   ) on commit drop;
@@ -62,15 +60,11 @@ begin
   ('Trizepsmaschine Überkopf','Arme','Maschine','B',7,2,8,12,90,'Oberarme stabil halten.','Letzter Satz bis zum sauberen Muskelversagen.',false),
   ('Bizepsmaschine','Arme','Maschine','B',8,2,8,12,90,'Oberarme stabil halten.','Letzter Satz bis zum sauberen Muskelversagen.',false);
 
-  for v_ex in select distinct null::uuid loop null; end loop;
-
-  -- Create exercise catalogue rows for this user.
   insert into public.exercises(owner_id,name,category,equipment,studio,is_shared_catalogue,is_active)
   select v_user,s.name,s.category,s.equipment,'John Reed',false,true
   from (select distinct name,category,equipment from seed_exercises) s
   on conflict do nothing;
 
-  -- Replace plan exercise assignments for this plan version.
   delete from public.plan_exercises where plan_workout_id in (v_a,v_b);
 
   insert into public.plan_exercises(user_id,plan_workout_id,exercise_id,exercise_order,target_sets,rep_min,rep_max,rest_seconds,instructions,failure_rule,is_core_exercise)
@@ -86,7 +80,6 @@ begin
     next_plan_workout_id=coalesce(public.user_plan_state.next_plan_workout_id,excluded.next_plan_workout_id),
     preferred_weekdays=excluded.preferred_weekdays,minimum_rest_hours=excluded.minimum_rest_hours,updated_at=now();
 
-  -- Create the next 18 planned sessions only when none exist yet.
   if not exists(select 1 from public.scheduled_workouts where user_id=v_user and status in ('planned','confirmed','started')) then
     v_date := current_date;
     while extract(dow from v_date)::int not in (2,4,6) loop v_date := v_date + 1; end loop;
