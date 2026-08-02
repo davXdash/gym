@@ -1,5 +1,5 @@
-const CACHE='gym-shell-v7';
-const ASSETS=['./','./index.html','./css/styles-v2.css','./css/modern-v4.css','./css/app-v6.css','./js/app-v6.js','./js/supabase-config.js','./manifest.webmanifest'];
+const CACHE='gym-shell-v8';
+const ASSETS=['./','./index.html','./css/styles-v2.css','./css/modern-v4.css','./css/app-v6.css','./js/app-v7.js','./js/supabase-config.js','./manifest.webmanifest'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)));self.skipWaiting();});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))));self.clients.claim();});
 self.addEventListener('fetch',event=>{if(event.request.method!=='GET')return;const url=new URL(event.request.url),nav=event.request.mode==='navigate',own=url.origin===self.location.origin;if(nav){event.respondWith(fetch(event.request).then(r=>{const c=r.clone();caches.open(CACHE).then(cache=>cache.put('./index.html',c));return r}).catch(()=>caches.match('./index.html')));return}if(own){event.respondWith(fetch(event.request).then(r=>{const c=r.clone();caches.open(CACHE).then(cache=>cache.put(event.request,c));return r}).catch(()=>caches.match(event.request)))}});
