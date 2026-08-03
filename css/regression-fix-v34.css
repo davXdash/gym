@@ -1,0 +1,35 @@
+/* v34: visible hierarchy, calm header, readable dark mode */
+#connection-status{display:none!important}
+#sync-now{display:none}
+body:has(#sync-count:not(.hidden)) #sync-now{display:inline-flex}
+.status-line{gap:8px;padding:0 18px 8px;justify-content:flex-end}
+#offline-toggle{font-size:.82rem;padding:8px 12px}
+#sync-now{font-size:.82rem;padding:8px 12px}
+.topbar{gap:10px}
+.topbar-title{min-width:0;flex:1}
+.topbar-title p{display:none}
+.topbar-title h1{font-size:1.22rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+#workout-dialog #exercise-list{background:color-mix(in srgb,var(--surface-2,#eef2ee) 72%,var(--surface,#fff));padding-inline:12px}
+#exercise-list .exercise-card[data-v18].active-v30{display:block!important;border:3px solid var(--accent,#4f765c)!important;border-radius:24px!important;background:var(--surface,#fff)!important;box-shadow:0 14px 38px rgba(22,42,29,.16)!important;padding:12px!important;margin:4px 0 22px!important}
+.exercise-card .exercise-v18-head{position:relative!important;top:auto!important;margin:0 0 14px!important;padding:15px 16px!important;border:0!important;border-radius:16px!important;background:var(--accent-soft,#dfe9e1)!important;box-shadow:none!important}
+.exercise-card .exercise-v18-head h3{font-size:1.32rem!important;margin:0 0 5px!important;color:var(--text,#151a16)!important}
+.exercise-card .variant-shell{border:2px solid var(--line,#cfd8d1)!important;border-radius:19px!important;box-shadow:none!important;background:var(--surface,#fff)!important}
+.exercise-card .variant-nav{border-bottom:1px solid var(--line,#d7ded8);padding:12px!important}
+.exercise-card .variant-media{border:1px solid var(--line,#d7ded8);min-height:150px}
+.exercise-card .tracking-summary{padding:12px!important;border-top:1px solid var(--line,#d7ded8);background:var(--surface-2,#f2f5f2)}
+.exercise-card .tracking-panel{padding:14px 12px!important;border-top:2px solid var(--line,#cfd8d1);background:var(--surface,#fff)}
+.exercise-card .progression-card-v20,.coach-v31{border:1px solid var(--line,#cfd8d1)!important;background:var(--surface-2,#eef3ef)!important}
+.exercise-card .set-row{padding:7px 0;border-bottom:1px solid var(--line,#d7ded8)}
+.exercise-card .exercise-actions{padding-top:14px!important;border-top:2px solid var(--line,#cfd8d1)}
+.exercise-nav-v30{padding-top:12px;border-top:1px solid var(--line,#d7ded8)}
+.exercise-progress-v30{padding:8px 4px 14px!important;margin-bottom:10px;border-bottom:2px solid var(--line,#cfd8d1)}
+.exercise-progress-v30 button{min-width:46px;height:42px}
+
+html[data-theme="dark"] #workout-dialog #exercise-list{background:#111512!important}
+html[data-theme="dark"] #exercise-list .exercise-card[data-v18].active-v30{background:#1c221d!important;border-color:#7fa48a!important;box-shadow:0 14px 38px rgba(0,0,0,.48)!important}
+html[data-theme="dark"] .exercise-card .exercise-v18-head{background:#304238!important}
+html[data-theme="dark"] .exercise-card .exercise-v18-head h3{color:#fff!important}
+html[data-theme="dark"] .exercise-card .variant-shell,html[data-theme="dark"] .exercise-card .tracking-panel{background:#1c221d!important;border-color:#46534a!important;color:#f5f7f5!important}
+html[data-theme="dark"] .exercise-card .tracking-summary,html[data-theme="dark"] .exercise-card .progression-card-v20,html[data-theme="dark"] .coach-v31{background:#252e27!important;border-color:#46534a!important;color:#f5f7f5!important}
+html[data-theme="dark"] input,html[data-theme="dark"] select,html[data-theme="dark"] textarea{background:#111512!important;color:#fff!important;border-color:#536158!important}
