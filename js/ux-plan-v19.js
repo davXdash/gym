@@ -50,9 +50,8 @@ function propagate(input,selector){
   const index=rows.indexOf(row);
   for(let i=index+1;i<rows.length;i++){
     const next=rows[i].querySelector(selector);
-    if(next&&!next.value)next.value=input.value;
+    if(next)next.value=input.value;
   }
-  input.dispatchEvent(new Event('change',{bubbles:true}));
 }
 
 function cleanOverloadCopy(){
