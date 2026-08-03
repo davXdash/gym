@@ -1,10 +1,12 @@
-const CACHE='gym-shell-v12';
-const ASSETS=['./','./index.html','./css/app-v11.css','./js/app-v11.js','./js/calendar-fix-v12.js','./js/supabase-config.js','./manifest.webmanifest'];
+const CACHE='gym-shell-v13';
+const ASSETS=['./','./index.html','./css/app-v11.css','./css/patch-v13.css','./js/app-v11.js','./js/calendar-fix-v12.js','./js/patch-v13.js','./js/supabase-config.js','./manifest.webmanifest','./IMG_3043.png','./IMG_3045.png','./IMG_3046.png','./IMG_3050.png','./IMG_3052.png','./IMG_3056.png','./IMG_3064.png','./IMG_3065.png','./IMG_3066.png','./IMG_3070.png'];
 const injectPatch=async response=>{
   const type=response.headers.get('content-type')||'';
   if(!type.includes('text/html'))return response;
   let html=await response.text();
+  if(!html.includes('patch-v13.css'))html=html.replace('</head>','<link rel="stylesheet" href="css/patch-v13.css"></head>');
   if(!html.includes('calendar-fix-v12.js'))html=html.replace('</body>','<script type="module" src="js/calendar-fix-v12.js"></script></body>');
+  if(!html.includes('patch-v13.js'))html=html.replace('</body>','<script type="module" src="js/patch-v13.js"></script></body>');
   return new Response(html,{status:response.status,statusText:response.statusText,headers:{...Object.fromEntries(response.headers.entries()),'content-type':'text/html; charset=utf-8'}});
 };
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)));self.skipWaiting()});
