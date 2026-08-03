@@ -1,10 +1,5 @@
-/* v34: visible hierarchy, calm header, readable dark mode */
-#connection-status{display:none!important}
-#sync-now{display:none}
-body:has(#sync-count:not(.hidden)) #sync-now{display:inline-flex}
-.status-line{gap:8px;padding:0 18px 8px;justify-content:flex-end}
-#offline-toggle{font-size:.82rem;padding:8px 12px}
-#sync-now{font-size:.82rem;padding:8px 12px}
+/* v37: legacy status controls removed permanently */
+.status-line,#offline-toggle,#sync-now,#connection-status,#sync-count{display:none!important}
 .topbar{gap:10px}
 .topbar-title{min-width:0;flex:1}
 .topbar-title p{display:none}
