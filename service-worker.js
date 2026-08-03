@@ -1,5 +1,5 @@
-const CACHE='gym-shell-v15';
-const ASSETS=['./','./index.html','./css/app-v11.css','./css/patch-v13.css','./css/patch-v14.css','./js/app-v11.js','./js/app-fixes-v15.js','./js/supabase-config.js','./manifest.webmanifest','./IMG_3043.png','./IMG_3045.png','./IMG_3046.png','./IMG_3050.png','./pics_johnreed/IMG_3052.png','./pics_johnreed/IMG_3056.png','./IMG_3064.png','./IMG_3065.png','./IMG_3066.png','./IMG_3070.png'];
+const CACHE='gym-shell-v16';
+const ASSETS=['./','./index.html','./css/app-v11.css','./css/patch-v13.css','./css/patch-v14.css','./css/tracking-v16.css','./js/app-v11.js','./js/app-fixes-v15.js','./js/tracking-ui-v16.js','./js/supabase-config.js','./manifest.webmanifest','./IMG_3040.png','./IMG_3041.png','./IMG_3042.png','./IMG_3043.png','./IMG_3044.png','./IMG_3045.png','./IMG_3046.png','./IMG_3047.png','./IMG_3048.png','./IMG_3049.png','./IMG_3050.png','./IMG_3051.png','./IMG_3062.png','./IMG_3063.png','./IMG_3064.png','./IMG_3065.png','./IMG_3066.png','./IMG_3067.png','./IMG_3068.png','./IMG_3069.png','./IMG_3070.png','./IMG_3071.png'];
 const prepareHtml=async response=>{
  const type=response.headers.get('content-type')||'';
  if(!type.includes('text/html'))return response;
@@ -7,7 +7,9 @@ const prepareHtml=async response=>{
  html=html.replace(/<script type="module" src="js\/(calendar-fix-v12|patch-v13|patch-v14)\.js"><\/script>/g,'');
  if(!html.includes('patch-v13.css'))html=html.replace('</head>','<link rel="stylesheet" href="css/patch-v13.css"></head>');
  if(!html.includes('patch-v14.css'))html=html.replace('</head>','<link rel="stylesheet" href="css/patch-v14.css"></head>');
+ if(!html.includes('tracking-v16.css'))html=html.replace('</head>','<link rel="stylesheet" href="css/tracking-v16.css"></head>');
  if(!html.includes('app-fixes-v15.js'))html=html.replace('</body>','<script type="module" src="js/app-fixes-v15.js"></script></body>');
+ if(!html.includes('tracking-ui-v16.js'))html=html.replace('</body>','<script type="module" src="js/tracking-ui-v16.js"></script></body>');
  return new Response(html,{status:response.status,statusText:response.statusText,headers:{...Object.fromEntries(response.headers.entries()),'content-type':'text/html; charset=utf-8'}});
 };
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)));self.skipWaiting()});
