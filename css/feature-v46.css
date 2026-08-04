@@ -1,0 +1,14 @@
+/* Feature v46: stable shell and quiet sync controls */
+.topbar{position:sticky;top:0;z-index:80;background:color-mix(in srgb,var(--bg,#f6f7f5) 90%,transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-bottom:1px solid var(--line,#dfe3df)}
+#theme-toggle{width:40px!important;height:40px!important;min-width:40px!important;padding:0!important}
+.status-line.status-dashboard-v46{display:flex!important;position:static!important;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 24px 0;padding:0;background:transparent;border:0;min-height:38px}
+.status-line.status-dashboard-v46 .status-pill{min-height:36px;padding:7px 12px;border-radius:18px;font-size:.85rem;white-space:nowrap}
+.status-line.status-dashboard-v46 #connection-status{margin-left:auto;background:transparent;border:0;padding-inline:4px;color:var(--muted,#6f7771)}
+.status-line.status-dashboard-v46 #sync-now.is-idle{display:none!important}
+.status-line.status-dashboard-v46 #sync-count{display:none!important}
+.status-line.status-dashboard-v46 #offline-toggle.manual-active{background:var(--accent,#466d55);color:#fff;border-color:transparent}
+#page-calendar .page-head>div:last-child{display:flex;flex-direction:row;gap:8px;align-items:center}
+#page-calendar .page-head>div:last-child .icon-button{flex:0 0 auto}
+@media(max-width:420px){.status-line.status-dashboard-v46{margin-inline:18px}.topbar-title p{font-size:.68rem}.topbar-title h1{font-size:1.2rem}}
+html[data-theme="dark"] .topbar{background:rgba(16,21,17,.9);border-color:#303832}
+html[data-theme="dark"] .status-line.status-dashboard-v46 #connection-status{color:#aab4ac}
