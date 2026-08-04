@@ -1,3 +1,5 @@
+import './history-coach-v48.js?v=49';
+
 const V46_QUEUE='gym-queue-v11';
 const V46_PENDING='gym-tracking-pending-v18';
 const V46_OFFLINE='gym-offline-v11';
@@ -61,6 +63,8 @@ function renderStatus46(){
 }
 
 function watchStorage46(){
+  if(window.__gymStorageWatch46)return;
+  window.__gymStorageWatch46=true;
   const originalSet=localStorage.setItem.bind(localStorage);
   const originalRemove=localStorage.removeItem.bind(localStorage);
   localStorage.setItem=(key,value)=>{originalSet(key,value);if([V46_QUEUE,V46_PENDING,V46_OFFLINE].includes(key))queueMicrotask(renderStatus46)};
