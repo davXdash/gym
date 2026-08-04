@@ -1,20 +1,9 @@
-import './training-mode-v30.js';
-import './coach-v31.js';
-import './studio-page-v35.js';
-import './device-photo-v36.js';
-import './feature-v46.js';
 import {createClient} from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 import {SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY} from './supabase-config.js';
 
 const supabase=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 const $=(s,r=document)=>r.querySelector(s);
 const $$=(s,r=document)=>[...r.querySelectorAll(s)];
-
-for(const href of ['css/training-mode-v30.css','css/coach-studio-v32.css','css/studio-page-v35.css','css/device-photo-v36.css']){
-  if(!document.querySelector(`link[href="${href}"]`)){
-    const link=document.createElement('link');link.rel='stylesheet';link.href=href;document.head.append(link);
-  }
-}
 
 function fixShell(){
   const topSmall=$('.topbar-title p');if(topSmall)topSmall.textContent='DEIN TRAINING';
@@ -25,9 +14,8 @@ function fixShell(){
     title.textContent=names[active]||'Dave';
   }
   const drawerLabel=$('.drawer-head small');if(drawerLabel)drawerLabel.textContent='TRAININGSPLAN';
-  const drawerName=$('.drawer-head h2');if(drawNameSafe(drawerName))drawerName.textContent='Dave';
+  const drawerName=$('.drawer-head h2');if(drawerName)drawerName.textContent='Dave';
 }
-function drawNameSafe(node){return Boolean(node)}
 
 function plannedRows(){
   const grid=$('#page-calendar [data-calendar-grid]');if(!grid)return [];
@@ -36,34 +24,34 @@ function plannedRows(){
 function calendarInvalid(rows){
   for(let i=1;i<rows.length;i++){
     const gap=Math.round((new Date(`${rows[i].date}T12:00:00`)-new Date(`${rows[i-1].date}T12:00:00`))/86400000);
-    if(rows[i].code===rows[i-1].code||gap<3)return true;
+    if(rows[i].code===rows[i-1].code||gap<2)return true;
   }
   return false;
 }
 function ensureCalendarRepair(){
-  const existing=$('#calendar-repair-v46');
+  const existing=$('#calendar-repair-v47');
   if(!calendarInvalid(plannedRows())){existing?.remove();return}
   if(existing)return;
   const grid=$('#page-calendar .calendar-card');if(!grid)return;
-  const box=document.createElement('section');box.id='calendar-repair-v46';box.className='error-banner';
-  box.innerHTML='<strong>Dein Kalender muss korrigiert werden</strong><p>Einheiten liegen zu dicht zusammen oder die A/B-Folge ist unterbrochen.</p><button type="button" id="calendar-repair-start-v46">Nächstes Training festlegen</button>';
+  const box=document.createElement('section');box.id='calendar-repair-v47';box.className='error-banner';
+  box.innerHTML='<strong>Dein Kalender muss korrigiert werden</strong><p>Einheiten liegen direkt hintereinander oder die A/B-Folge ist unterbrochen.</p><button type="button" id="calendar-repair-start-v47">Nächstes Training festlegen</button>';
   grid.insertAdjacentElement('afterend',box);
-  $('#calendar-repair-start-v46').onclick=openRepairDialog;
+  $('#calendar-repair-start-v47').onclick=openRepairDialog;
 }
 function openRepairDialog(){
-  let dialog=$('#calendar-repair-dialog-v46');
+  let dialog=$('#calendar-repair-dialog-v47');
   if(!dialog){
-    dialog=document.createElement('dialog');dialog.id='calendar-repair-dialog-v46';
-    dialog.innerHTML='<div class="dialog-head"><div><small>KALENDER REPARIEREN</small><h2>Wann trainierst du als Nächstes?</h2></div><button type="button" class="dialog-close">Schließen</button></div><div class="form-grid" style="padding:18px"><label>Datum<input type="date" id="calendar-repair-date-v46"></label><p>Ab diesem Tag wird die Folge mit A/B-Wechsel und jeweils zwei freien Tagen neu aufgebaut.</p><button type="button" class="primary" id="calendar-repair-confirm-v46">Kalender reparieren</button><p id="calendar-repair-status-v46"></p></div>';
-    document.body.append(dialog);dialog.querySelector('.dialog-close').onclick=()=>dialog.close();$('#calendar-repair-confirm-v46').onclick=repairCalendar;
+    dialog=document.createElement('dialog');dialog.id='calendar-repair-dialog-v47';
+    dialog.innerHTML='<div class="dialog-head"><div><small>KALENDER REPARIEREN</small><h2>Wann trainierst du als Nächstes?</h2></div><button type="button" class="dialog-close">Schließen</button></div><div class="form-grid" style="padding:18px"><label>Datum<input type="date" id="calendar-repair-date-v47"></label><p>Ab diesem Tag wird die Folge mit A/B-Wechsel und jeweils einem freien Tag neu aufgebaut.</p><button type="button" class="primary" id="calendar-repair-confirm-v47">Kalender reparieren</button><p id="calendar-repair-status-v47"></p></div>';
+    document.body.append(dialog);dialog.querySelector('.dialog-close').onclick=()=>dialog.close();$('#calendar-repair-confirm-v47').onclick=repairCalendar;
   }
-  const tomorrow=new Date();tomorrow.setDate(tomorrow.getDate()+1);$('#calendar-repair-date-v46').value=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Berlin'}).format(tomorrow);dialog.showModal();
+  const tomorrow=new Date();tomorrow.setDate(tomorrow.getDate()+1);$('#calendar-repair-date-v47').value=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Berlin'}).format(tomorrow);dialog.showModal();
 }
 async function repairCalendar(){
-  const status=$('#calendar-repair-status-v46'),button=$('#calendar-repair-confirm-v46');
+  const status=$('#calendar-repair-status-v47'),button=$('#calendar-repair-confirm-v47');
   try{
     button.disabled=true;status.textContent='Kalender wird repariert …';
-    const startValue=$('#calendar-repair-date-v46').value;if(!startValue)throw new Error('Bitte ein Datum auswählen.');
+    const startValue=$('#calendar-repair-date-v47').value;if(!startValue)throw new Error('Bitte ein Datum auswählen.');
     const {data:{session}}=await supabase.auth.getSession();if(!session)throw new Error('Bitte neu anmelden.');
     const plan=await supabase.from('training_plans').select('id').eq('is_active',true).order('version',{ascending:false}).limit(1).single();if(plan.error)throw plan.error;
     const pws=await supabase.from('plan_workouts').select('id,code').eq('plan_id',plan.data.id);if(pws.error)throw pws.error;
@@ -72,7 +60,7 @@ async function repairCalendar(){
     const lastCode=pws.data.find(x=>x.id===last.data?.[0]?.plan_workout_id)?.code,firstCode=lastCode==='A'?'B':'A';
     const del=await supabase.from('scheduled_workouts').delete().in('status',['planned','confirmed','started']);if(del.error)throw del.error;
     const start=new Date(`${startValue}T12:00:00`),rows=[];
-    for(let i=0;i<24;i++){const d=new Date(start);d.setDate(start.getDate()+i*3);const code=i%2===0?firstCode:(firstCode==='A'?'B':'A');rows.push({user_id:session.user.id,plan_workout_id:byCode[code],scheduled_date:new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Berlin'}).format(d),status:'planned'})}
+    for(let i=0;i<32;i++){const d=new Date(start);d.setDate(start.getDate()+i*2);const code=i%2===0?firstCode:(firstCode==='A'?'B':'A');rows.push({user_id:session.user.id,plan_workout_id:byCode[code],scheduled_date:new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Berlin'}).format(d),status:'planned'})}
     const ins=await supabase.from('scheduled_workouts').insert(rows);if(ins.error)throw ins.error;
     localStorage.removeItem('gym-snapshot-v11');location.reload();
   }catch(error){status.textContent=error.message||String(error);button.disabled=false}
