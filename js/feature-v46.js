@@ -1,4 +1,5 @@
-import './history-coach-v48.js?v=49';
+import './history-coach-v48.js?v=50';
+import './stability-v50.js?v=50';
 
 const V46_QUEUE='gym-queue-v11';
 const V46_PENDING='gym-tracking-pending-v18';
@@ -45,21 +46,10 @@ function renderStatus46(){
   const connection=v46('#connection-status');
   const manual=localStorage.getItem(V46_OFFLINE)==='1';
   const pending=pendingCount46();
-  if(offline){
-    offline.textContent=manual?'Offline beenden':'Offline';
-    offline.classList.toggle('manual-active',manual);
-    offline.title=manual?'Automatische Synchronisierung wieder zulassen':'Notfall-Offline-Modus aktivieren';
-  }
-  if(sync){
-    sync.textContent=pending?`Sync (${pending})`:'Sync';
-    sync.classList.toggle('is-idle',pending===0||manual||!navigator.onLine);
-  }
-  if(connection){
-    connection.textContent=statusText46();
-    connection.title=statusText46();
-  }
+  if(offline){offline.textContent=manual?'Offline beenden':'Offline';offline.classList.toggle('manual-active',manual)}
+  if(sync){sync.textContent=pending?`Sync (${pending})`:'Sync';sync.classList.toggle('is-idle',pending===0||manual||!navigator.onLine)}
+  if(connection){connection.textContent=statusText46();connection.title=statusText46()}
   const title=v46('.topbar-title p');if(title)title.textContent='DEIN TRAINING';
-  const theme=v46('#theme-toggle');if(theme){theme.setAttribute('aria-label','Darstellung wechseln');theme.title='Darstellung wechseln'}
 }
 
 function watchStorage46(){
@@ -71,14 +61,8 @@ function watchStorage46(){
   localStorage.removeItem=(key)=>{originalRemove(key);if([V46_QUEUE,V46_PENDING,V46_OFFLINE].includes(key))queueMicrotask(renderStatus46)};
 }
 
-loadCss46();
-watchStorage46();
+loadCss46();watchStorage46();
 document.addEventListener('DOMContentLoaded',renderStatus46);
 window.addEventListener('load',()=>{renderStatus46();setTimeout(renderStatus46,500)});
-window.addEventListener('online',renderStatus46);
-window.addEventListener('offline',renderStatus46);
-window.addEventListener('storage',renderStatus46);
-document.addEventListener('click',event=>{
-  if(event.target.closest('#offline-toggle,#sync-now,#settings-offline,#settings-sync,[data-page],[data-page-link],#menu-toggle'))setTimeout(renderStatus46,80);
-},true);
-new MutationObserver(()=>requestAnimationFrame(renderStatus46)).observe(document.documentElement,{childList:true,subtree:true});
+window.addEventListener('online',renderStatus46);window.addEventListener('offline',renderStatus46);window.addEventListener('storage',renderStatus46);
+document.addEventListener('click',event=>{if(event.target.closest('#offline-toggle,#sync-now,#settings-offline,#settings-sync,[data-page],[data-page-link],#menu-toggle'))setTimeout(renderStatus46,80)},true);
