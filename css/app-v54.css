@@ -1,0 +1,156 @@
+/* V54 training corrections: one stable mobile workflow */
+#workout-dialog.workout-v54[open]{
+  touch-action:auto!important;
+  overscroll-behavior-y:auto!important;
+  -webkit-overflow-scrolling:touch!important;
+}
+#workout-dialog.workout-v54,
+#workout-dialog.workout-v54 *{
+  touch-action:auto;
+}
+#workout-dialog.workout-v54 .dialog-head{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) auto auto!important;
+  align-items:center!important;
+  gap:8px!important;
+}
+#workout-dialog.workout-v54 .dialog-head>div:first-child{min-width:0}
+#workout-dialog.workout-v54 .dialog-head h2{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+#workout-dialog.workout-v54 .timer-header-v54{
+  display:grid!important;
+  grid-template-columns:auto!important;
+  justify-items:center!important;
+  gap:1px!important;
+  min-width:72px!important;
+  margin:0!important;
+  padding:4px 8px!important;
+  border:1px solid var(--line,#dce1dd)!important;
+  border-radius:13px!important;
+  background:var(--surface,#fff)!important;
+  box-shadow:none!important;
+}
+#workout-dialog.workout-v54 .timer-header-v54 .timer{
+  margin:0!important;
+  font-size:1rem!important;
+  line-height:1.05!important;
+  font-variant-numeric:tabular-nums;
+}
+#workout-dialog.workout-v54 .timer-header-v54 #timer-toggle{
+  min-height:0!important;
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+  color:var(--accent,#427056)!important;
+  font-size:.66rem!important;
+  line-height:1.1!important;
+  font-weight:800!important;
+}
+#workout-dialog.workout-v54 #exercise-list{
+  touch-action:auto!important;
+  overscroll-behavior:auto!important;
+}
+#workout-dialog.workout-v54 input,
+#workout-dialog.workout-v54 button,
+#workout-dialog.workout-v54 summary{
+  touch-action:manipulation;
+}
+#workout-dialog.workout-v54 .set-row-v53 input:not([type="checkbox"]){font-size:16px!important}
+
+#workout-dialog.workout-v54 .overview-toolbar-v53{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+#workout-dialog.workout-v54 .overview-toolbar-v53 button{
+  width:100%;
+  min-height:42px;
+}
+#add-exercise-v54{
+  color:var(--accent,#427056)!important;
+  border-color:color-mix(in srgb,var(--accent,#427056) 45%,var(--line,#dce1dd))!important;
+}
+
+.exercise-sheet-v54{
+  position:fixed;
+  inset:0;
+  z-index:240;
+  display:grid;
+  align-items:end;
+  background:rgba(8,14,10,.56);
+  padding:18px 12px calc(12px + env(safe-area-inset-bottom));
+}
+.exercise-sheet-v54.hidden{display:none!important}
+.exercise-sheet-card-v54{
+  width:min(100%,620px);
+  max-height:82dvh;
+  margin:0 auto;
+  overflow:hidden;
+  display:grid;
+  grid-template-rows:auto auto minmax(0,1fr);
+  border-radius:24px;
+  background:var(--surface,#fff);
+  color:var(--text,#172019);
+  box-shadow:0 24px 70px rgba(0,0,0,.28);
+}
+.exercise-sheet-card-v54>header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:16px;
+  border-bottom:1px solid var(--line,#dce1dd);
+}
+.exercise-sheet-card-v54>header small{font-size:.64rem;letter-spacing:.11em;color:var(--muted,#69716b)}
+.exercise-sheet-card-v54>header h3{margin:3px 0 0;font-size:1.18rem}
+.exercise-sheet-card-v54>header button{min-height:40px;border-radius:13px}
+.exercise-sheet-search-v54{display:grid;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line,#dce1dd)}
+.exercise-sheet-search-v54 input{width:100%;min-height:48px;border:1px solid var(--line,#dce1dd);border-radius:15px;background:var(--surface-2,#f4f6f4);color:inherit;padding:10px 12px;font-size:16px}
+.exercise-sheet-search-v54 button{min-height:42px;border-radius:13px}
+#exercise-results-v54{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px 12px 16px;display:grid;gap:7px}
+#exercise-results-v54>button{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:52px;padding:10px 12px;border:1px solid var(--line,#dce1dd);border-radius:15px;background:var(--surface-2,#f4f6f4);color:inherit;text-align:left}
+#exercise-results-v54>button strong{font-size:.9rem}
+#exercise-results-v54>button span{font-size:.72rem;color:var(--accent,#427056);font-weight:800}
+
+.status-line{
+  min-height:0!important;
+  margin:8px 0 0!important;
+  gap:6px!important;
+  align-items:center!important;
+}
+.status-line #connection-status,
+.status-line #sync-count{display:none!important}
+.status-line #offline-toggle{
+  min-height:30px!important;
+  padding:4px 9px!important;
+  font-size:.72rem!important;
+  opacity:.72;
+}
+.status-line #sync-now{
+  min-height:30px!important;
+  padding:4px 9px!important;
+  font-size:.72rem!important;
+}
+.status-line:not(.has-pending-v54) #sync-now{display:none!important}
+
+#history-dialog-v53>header{padding-top:24px!important}
+#history-dialog-v53>header small{display:block;margin-bottom:4px}
+
+.rir-copy-v53::after{
+  content:' Warm-up ist optional und wird für Coach und Progression nicht als Arbeitssatz gewertet.';
+}
+
+html[data-theme="dark"] #workout-dialog.workout-v54 .timer-header-v54,
+html[data-theme="dark"] .exercise-sheet-card-v54{background:#171b18!important;border-color:#394139!important}
+html[data-theme="dark"] .exercise-sheet-search-v54 input,
+html[data-theme="dark"] #exercise-results-v54>button{background:#242a25;color:#f3f5f3;border-color:#3a443c}
+
+@media(max-width:390px){
+  #workout-dialog.workout-v54 .dialog-head{grid-template-columns:minmax(0,1fr) 68px auto!important;padding-inline:10px!important}
+  #workout-dialog.workout-v54 .dialog-close{min-width:74px!important;padding-inline:9px!important}
+  #workout-dialog.workout-v54 .timer-header-v54{min-width:64px!important;padding-inline:5px!important}
+  #workout-dialog.workout-v54 .overview-toolbar-v53{grid-template-columns:1fr}
+}
