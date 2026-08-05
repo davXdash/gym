@@ -1,10 +1,10 @@
-const CACHE='gym-shell-v50';
+const CACHE='gym-shell-v52';
 const CORE=[
  './index.html','./manifest.webmanifest',
- './css/app-v11.css','./css/patch-v13.css','./css/patch-v14.css','./css/training-v18.css','./css/ux-plan-v19.css','./css/progression-v20.css','./css/final-plan-v21.css',
+ './css/app-v11.css','./css/patch-v13.css','./css/patch-v14.css','./css/training-v18.css',
  './css/training-mode-v30.css','./css/coach-studio-v32.css','./css/studio-page-v35.css','./css/device-photo-v36.css','./css/feature-v46.css',
  './js/app-v11.js','./js/app-fixes-v15.js','./js/training-v18.js','./js/ux-plan-v19.js','./js/progression-v20.js','./js/final-plan-v21.js','./js/sync-policy-v22.js','./js/coach-v23.js','./js/status-fix-v25.js','./js/status-fix-v26.js',
- './js/training-mode-v30.js','./js/coach-v31.js','./js/studio-page-v35.js','./js/device-photo-v36.js','./js/feature-v46.js','./js/history-coach-v48.js','./js/stability-v50.js','./js/supabase-config.js'
+ './js/training-mode-v30.js','./js/coach-v31.js','./js/studio-page-v35.js','./js/device-photo-v36.js','./js/feature-v46.js','./js/history-coach-v48.js','./js/supabase-config.js'
 ];
 
 self.addEventListener('install',event=>{
