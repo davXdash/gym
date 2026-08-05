@@ -1,3 +1,11 @@
+import './training-mode-v30.js?v=51';
+import './coach-v31.js?v=51';
+import './studio-page-v35.js?v=51';
+import './device-photo-v36.js?v=51';
+import './feature-v46.js?v=51';
+import './history-coach-v48.js?v=51';
+import './stability-v50.js?v=51';
+
 const ACTIVE_KEY='gym-active-workout-v11';
 
 const readActive=()=>{
@@ -5,8 +13,7 @@ const readActive=()=>{
 };
 const writeActive=value=>localStorage.setItem(ACTIVE_KEY,JSON.stringify(value));
 
-// The original app-v11 handler rebuilds the complete exercise list after each
-// status click. Capture the event first and update only the affected card.
+// Preserve tracking fields when an exercise is marked complete or skipped.
 document.addEventListener('click',event=>{
   const button=event.target.closest('#exercise-list [data-ex][data-state]');
   if(!button)return;
@@ -26,6 +33,4 @@ document.addEventListener('click',event=>{
     item.classList.toggle('selected',item===button);
     item.setAttribute('aria-pressed',item===button?'true':'false');
   });
-
-  // Preserve all tracking fields, photos, sliders and the current scroll state.
 },true);
