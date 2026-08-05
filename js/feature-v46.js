@@ -1,6 +1,3 @@
-import './history-coach-v48.js?v=50';
-import './stability-v50.js?v=50';
-
 const V46_QUEUE='gym-queue-v11';
 const V46_PENDING='gym-tracking-pending-v18';
 const V46_OFFLINE='gym-offline-v11';
