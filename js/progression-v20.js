@@ -1,4 +1,5 @@
 import './progress-live-v62.js';
+import './live-authoritative-v65.js?v=65';
 
 const SNAP='gym-snapshot-v11';
 const $=(s,r=document)=>r.querySelector(s);

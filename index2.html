@@ -10,21 +10,41 @@ html,body{margin:0;min-height:100%;background:#f6f7f5;color:#171b18;font-family:
 </style>
 </head>
 <body>
-<div class="box"><strong>Aktuelle Trainingsversion wird geladen …</strong><span>Cache wird vollständig umgangen.</span></div>
+<div class="box"><strong>Aktuelle Trainingsversion wird geladen …</strong><span>Cache und Service Worker werden vollständig umgangen.</span></div>
 <script>
 (async()=>{
+  const params=new URLSearchParams(location.search);
+  if(!params.has('clean')){
+    try{
+      if('serviceWorker' in navigator){
+        const regs=await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r=>r.unregister()));
+      }
+      if('caches' in window){
+        const keys=await caches.keys();
+        await Promise.all(keys.map(k=>caches.delete(k)));
+      }
+    }catch(e){console.warn('Clean start:',e)}
+    location.replace(`./index2.html?clean=1&t=${Date.now()}`);
+    return;
+  }
+
   try{
     if('serviceWorker' in navigator){
-      const regs=await navigator.serviceWorker.getRegistrations();
-      await Promise.all(regs.map(r=>r.unregister()));
+      try{Object.defineProperty(navigator.serviceWorker,'register',{configurable:true,value:()=>Promise.resolve({scope:location.href})})}catch(e){try{navigator.serviceWorker.register=()=>Promise.resolve({scope:location.href})}catch(_){}}
     }
-    if('caches' in window){
-      const keys=await caches.keys();
-      await Promise.all(keys.map(k=>caches.delete(k)));
-    }
-  }catch(e){console.warn('Clean start:',e)}
-  const fresh=`${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  location.replace(`./index.html?clean=${encodeURIComponent(fresh)}`);
+    const stamp=`v65-${Date.now()}`;
+    const response=await fetch(`./index.html?source=index2&${stamp}`,{cache:'no-store'});
+    let html=await response.text();
+    html=html.replace(/(<link\b[^>]*\bhref=["'])(css\/[^"'?]+)([^"']*)(["'][^>]*>)/gi,(m,a,b,c,d)=>`${a}${b}?${stamp}${d}`);
+    html=html.replace(/(<script\b[^>]*\bsrc=["'])(js\/[^"'?]+)([^"']*)(["'][^>]*><\/script>)/gi,(m,a,b,c,d)=>`${a}${b}?${stamp}${d}`);
+    html=html.replace('<head>','<head><script>window.__GYM_INDEX2_NO_SW__=true;if("serviceWorker" in navigator){try{Object.defineProperty(navigator.serviceWorker,"register",{configurable:true,value:()=>Promise.resolve({scope:location.href})})}catch(e){}}<\/script>');
+    document.open();
+    document.write(html);
+    document.close();
+  }catch(error){
+    document.querySelector('.box').innerHTML=`<strong>Start fehlgeschlagen</strong><span>${String(error.message||error)}</span>`;
+  }
 })();
 </script>
 </body>
