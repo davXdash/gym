@@ -1,2 +1,2 @@
-// Legacy patch disabled in the clean V52 runtime.
+import './progress-live-v62.js';
 export {};
