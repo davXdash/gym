@@ -1,4 +1,4 @@
-const VERSION='74';
+const VERSION='75';
 
 async function load(path,label){
   try{
@@ -37,8 +37,7 @@ await load('./app-v53.js','workout core');
 await load('./app-v54.js','workout interactions');
 await load('./app-v55.js','device history');
 await load('./coach-progressive-v57.js','progressive coach');
-await load('./mobile-workout-v56.js','V61 workout interaction model');
-await load('./approved-workout-v74.js','approved V61 workout presentation');
+await load('./mobile-workout-v56.js','approved V61 workout interaction model');
 
 await load('./studio-page-v35.js','studio');
 await load('./device-photo-v36.js','device photos');
