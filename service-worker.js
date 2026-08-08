@@ -1,8 +1,8 @@
-const CACHE='gym-shell-v66';
+const CACHE='gym-shell-v67';
 const CORE=[
  './index.html','./manifest.webmanifest',
  './css/app-v11.css','./css/patch-v13.css','./css/patch-v14.css','./css/training-v18.css','./css/app-v53.css','./css/app-v54.css','./css/app-v55.css','./css/coach-progressive-v57.css','./css/mobile-workout-v56.css','./css/live-workout-v61.css','./css/studio-page-v35.css','./css/device-photo-v36.css',
- './js/app-v11.js','./js/app-fixes-v15.js','./js/training-v18.js','./js/ux-plan-v19.js','./js/progression-v20.js','./js/live-authoritative-v65.js','./js/progress-live-v62.js','./js/final-plan-v21.js','./js/sync-policy-v22.js','./js/coach-v23.js','./js/status-fix-v25.js','./js/status-fix-v26.js','./js/app-v53.js','./js/app-v54.js','./js/app-v55.js','./js/coach-progressive-v57.js','./js/mobile-workout-v56.js','./js/studio-page-v35.js','./js/device-photo-v36.js','./js/supabase-config.js',
+ './js/app-v11.js','./js/app-fixes-v15.js','./js/training-v18.js','./js/ux-plan-v19.js','./js/progression-v20.js','./js/progress-live-v62.js','./js/final-plan-v21.js','./js/sync-policy-v22.js','./js/coach-v23.js','./js/status-fix-v25.js','./js/status-fix-v26.js','./js/app-v53.js','./js/app-v54.js','./js/app-v55.js','./js/coach-progressive-v57.js','./js/mobile-workout-v56.js','./js/schedule-v67.js','./js/studio-page-v35.js','./js/device-photo-v36.js','./js/supabase-config.js',
  './IMG_3040.png','./IMG_3041.png','./IMG_3042.png','./IMG_3043.png','./IMG_3044.png','./IMG_3045.png','./IMG_3046.png','./IMG_3047.png','./IMG_3048.png','./IMG_3049.png','./IMG_3050.png','./IMG_3051.png','./IMG_3062.png','./IMG_3063.png','./IMG_3064.png','./IMG_3065.png','./IMG_3066.png','./IMG_3067.png','./IMG_3068.png','./IMG_3069.png','./IMG_3070.png','./IMG_3071.png','./pics_johnreed/IMG_3452.jpeg'
 ];
 self.addEventListener('install',event=>{event.waitUntil((async()=>{const cache=await caches.open(CACHE);await Promise.allSettled(CORE.map(async url=>{const response=await fetch(url,{cache:'reload'});if(response.ok)await cache.put(url,response.clone())}));await self.skipWaiting()})())});
