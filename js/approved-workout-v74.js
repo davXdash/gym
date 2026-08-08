@@ -1,0 +1,6 @@
+const q=(s,r=document)=>r.querySelector(s);const qa=(s,r=document)=>[...r.querySelectorAll(s)];
+function style(){const href='./css/approved-workout-v74.css?v=74';if(q('link[data-approved-v74]'))return;const l=document.createElement('link');l.rel='stylesheet';l.href=href;l.dataset.approvedV74='1';document.head.append(l)}
+function apply(){const d=q('#workout-dialog');if(!d?.open)return;d.classList.add('approved-v74');const items=qa('[data-select-ex-v53]',d),card=q('.training-exercise-v53',d),idx=Math.max(0,items.findIndex(x=>x.classList.contains('active')));const title=q('.exercise-title-v53',card);if(title)title.dataset.approvedLabel=`ÜBUNG ${idx+1} VON ${Math.max(1,items.length)}`;q('.v61-tabs .active',d)?.scrollIntoView({inline:'center',block:'nearest'});}
+function schedule(){[0,40,120,260].forEach(ms=>setTimeout(apply,ms))}
+function install(){style();const d=q('#workout-dialog');d?.addEventListener('toggle',()=>{if(d.open)schedule()});document.addEventListener('click',e=>{if(e.target.closest('[data-workout],#start-workout,[data-select-ex-v53],[data-prev-ex-v53],[data-next-ex-v53],[data-device-index-v55],[data-variant-prev-v53],[data-variant-next-v53],[data-add-set-v53],[data-remove-set-v53]'))schedule()},true);if(d?.open)schedule()}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
