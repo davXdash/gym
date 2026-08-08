@@ -26,6 +26,7 @@ await load('./app-v54.js','workout interactions');
 await load('./app-v55.js','device history');
 await load('./coach-progressive-v57.js','progressive coach');
 await load('./mobile-workout-v61.js','mobile workout');
+await load('./workout-live.js','approved workout controls');
 
 await load('./studio-page-v35.js','studio');
 await load('./device-photo-v36.js','device photos');
