@@ -1,8 +1,6 @@
-const VERSION='76';
-
 async function load(path,label){
   try{
-    await import(`${path}?v=${VERSION}`);
+    await import(path);
     console.info(`[GYM] ${label} loaded`);
     return true;
   }catch(error){
@@ -15,29 +13,19 @@ function stylesheet(path){
   if(document.querySelector(`link[data-live-style="${path}"]`))return;
   const link=document.createElement('link');
   link.rel='stylesheet';
-  link.href=`${path}?v=${VERSION}`;
+  link.href=path;
   link.dataset.liveStyle=path;
   document.head.append(link);
 }
 
-try{
-  if('serviceWorker' in navigator){
-    const regs=await navigator.serviceWorker.getRegistrations();
-    await Promise.all(regs.map(r=>r.unregister()));
-  }
-  if('caches' in window){
-    const keys=await caches.keys();
-    await Promise.all(keys.map(k=>caches.delete(k)));
-  }
-}catch(error){console.warn('[GYM] cache cleanup failed',error)}
-
 stylesheet('./css/live-workout-v61.css');
+stylesheet('./css/workout-live.css');
 
 await load('./app-v53.js','workout core');
 await load('./app-v54.js','workout interactions');
 await load('./app-v55.js','device history');
 await load('./coach-progressive-v57.js','progressive coach');
-await load('./mobile-workout-v61.js','V61 mobile workout');
+await load('./mobile-workout-v61.js','mobile workout');
 
 await load('./studio-page-v35.js','studio');
 await load('./device-photo-v36.js','device photos');
