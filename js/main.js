@@ -1,4 +1,4 @@
-const VERSION='72';
+const VERSION='73';
 
 async function load(path,label){
   try{
@@ -11,7 +11,16 @@ async function load(path,label){
   }
 }
 
-// Remove remnants of the former service-worker/app-cache architecture.
+function stylesheet(path){
+  if(document.querySelector(`link[data-live-style="${path}"]`))return;
+  const link=document.createElement('link');
+  link.rel='stylesheet';
+  link.href=`${path}?v=${VERSION}`;
+  link.dataset.liveStyle=path;
+  document.head.append(link);
+}
+
+// No application-cache/service-worker runtime. Pages serves the current files directly.
 try{
   if('serviceWorker' in navigator){
     const regs=await navigator.serviceWorker.getRegistrations();
@@ -23,19 +32,22 @@ try{
   }
 }catch(error){console.warn('[GYM] cache cleanup failed',error)}
 
-// Workout stack: ordered because the later modules enhance the DOM created by the earlier ones.
+// The V61 interaction controller and its V61 stylesheet are one feature.
+// Loading only the JS created the old/new hybrid UI seen on iPhone.
+stylesheet('./css/live-workout-v61.css');
+
 await load('./app-v53.js','workout core');
 await load('./app-v54.js','workout interactions');
 await load('./app-v55.js','device history');
 await load('./coach-progressive-v57.js','progressive coach');
-await load('./mobile-workout-v56.js','mobile workout UI');
+await load('./mobile-workout-v56.js','V61 mobile workout UI');
 
-// Independent features. A failure in one must never prevent the others from loading.
+// Independent features: one failure must not take the rest of the app down.
 await load('./studio-page-v35.js','studio');
 await load('./device-photo-v36.js','device photos');
 await load('./progress-live-v62.js','progress charts');
 await load('./status-fix-v26.js','shell polish');
 await load('./sync-policy-v22.js','sync policy');
 
-// Schedule controller loads last so old workout modules cannot win the dashboard hero afterwards.
+// Authoritative schedule owner loads last so older workout modules cannot overwrite the hero.
 await load('./schedule-v69.js','schedule rotation');
