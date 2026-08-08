@@ -1,4 +1,4 @@
-const CACHE='gym-shell-v67';
+const CACHE='gym-shell-v68';
 const CORE=[
  './index.html','./manifest.webmanifest',
  './css/app-v11.css','./css/patch-v13.css','./css/patch-v14.css','./css/training-v18.css','./css/app-v53.css','./css/app-v54.css','./css/app-v55.css','./css/coach-progressive-v57.css','./css/mobile-workout-v56.css','./css/live-workout-v61.css','./css/studio-page-v35.css','./css/device-photo-v36.css',
