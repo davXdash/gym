@@ -1,7 +1,3 @@
-import {createClient} from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-import {SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY} from './supabase-config.js';
-
-const supabase=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 const $=(s,r=document)=>r.querySelector(s);
 const $$=(s,r=document)=>[...r.querySelectorAll(s)];
 
@@ -17,58 +13,14 @@ function fixShell(){
   const drawerName=$('.drawer-head h2');if(drawerName)drawerName.textContent='Dave';
 }
 
-function plannedRows(){
-  const grid=$('#page-calendar [data-calendar-grid]');if(!grid)return [];
-  return $$('.calendar-day.planned',grid).map(day=>({date:day.dataset.date,code:day.querySelector('.plan-badge')?.textContent?.trim()?.charAt(0)})).filter(x=>x.date&&x.code).sort((a,b)=>a.date.localeCompare(b.date));
-}
-function calendarInvalid(rows){
-  for(let i=1;i<rows.length;i++){
-    const gap=Math.round((new Date(`${rows[i].date}T12:00:00`)-new Date(`${rows[i-1].date}T12:00:00`))/86400000);
-    if(rows[i].code===rows[i-1].code||gap<2)return true;
-  }
-  return false;
-}
-function ensureCalendarRepair(){
-  const existing=$('#calendar-repair-v47');
-  if(!calendarInvalid(plannedRows())){existing?.remove();return}
-  if(existing)return;
-  const grid=$('#page-calendar .calendar-card');if(!grid)return;
-  const box=document.createElement('section');box.id='calendar-repair-v47';box.className='error-banner';
-  box.innerHTML='<strong>Dein Kalender muss korrigiert werden</strong><p>Einheiten liegen direkt hintereinander oder die A/B-Folge ist unterbrochen.</p><button type="button" id="calendar-repair-start-v47">Nächstes Training festlegen</button>';
-  grid.insertAdjacentElement('afterend',box);
-  $('#calendar-repair-start-v47').onclick=openRepairDialog;
-}
-function openRepairDialog(){
-  let dialog=$('#calendar-repair-dialog-v47');
-  if(!dialog){
-    dialog=document.createElement('dialog');dialog.id='calendar-repair-dialog-v47';
-    dialog.innerHTML='<div class="dialog-head"><div><small>KALENDER REPARIEREN</small><h2>Wann trainierst du als Nächstes?</h2></div><button type="button" class="dialog-close">Schließen</button></div><div class="form-grid" style="padding:18px"><label>Datum<input type="date" id="calendar-repair-date-v47"></label><p>Ab diesem Tag wird die Folge mit A/B-Wechsel und jeweils einem freien Tag neu aufgebaut.</p><button type="button" class="primary" id="calendar-repair-confirm-v47">Kalender reparieren</button><p id="calendar-repair-status-v47"></p></div>';
-    document.body.append(dialog);dialog.querySelector('.dialog-close').onclick=()=>dialog.close();$('#calendar-repair-confirm-v47').onclick=repairCalendar;
-  }
-  const tomorrow=new Date();tomorrow.setDate(tomorrow.getDate()+1);$('#calendar-repair-date-v47').value=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Berlin'}).format(tomorrow);dialog.showModal();
-}
-async function repairCalendar(){
-  const status=$('#calendar-repair-status-v47'),button=$('#calendar-repair-confirm-v47');
-  try{
-    button.disabled=true;status.textContent='Kalender wird repariert …';
-    const startValue=$('#calendar-repair-date-v47').value;if(!startValue)throw new Error('Bitte ein Datum auswählen.');
-    const {data:{session}}=await supabase.auth.getSession();if(!session)throw new Error('Bitte neu anmelden.');
-    const plan=await supabase.from('training_plans').select('id').eq('is_active',true).order('version',{ascending:false}).limit(1).single();if(plan.error)throw plan.error;
-    const pws=await supabase.from('plan_workouts').select('id,code').eq('plan_id',plan.data.id);if(pws.error)throw pws.error;
-    const byCode=Object.fromEntries(pws.data.map(x=>[x.code,x.id]));
-    const last=await supabase.from('workouts').select('workout_date,plan_workout_id').in('status',['completed','partial']).order('workout_date',{ascending:false}).limit(1);if(last.error)throw last.error;
-    const lastCode=pws.data.find(x=>x.id===last.data?.[0]?.plan_workout_id)?.code,firstCode=lastCode==='A'?'B':'A';
-    const del=await supabase.from('scheduled_workouts').delete().in('status',['planned','confirmed','started']);if(del.error)throw del.error;
-    const start=new Date(`${startValue}T12:00:00`),rows=[];
-    for(let i=0;i<32;i++){const d=new Date(start);d.setDate(start.getDate()+i*2);const code=i%2===0?firstCode:(firstCode==='A'?'B':'A');rows.push({user_id:session.user.id,plan_workout_id:byCode[code],scheduled_date:new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Berlin'}).format(d),status:'planned'})}
-    const ins=await supabase.from('scheduled_workouts').insert(rows);if(ins.error)throw ins.error;
-    localStorage.removeItem('gym-snapshot-v11');location.reload();
-  }catch(error){status.textContent=error.message||String(error);button.disabled=false}
+function twoDecimalCharts(){
+  $$('#weight-chart text,#weight-chart-2 text').forEach(t=>{
+    const n=Number(String(t.textContent).replace(',','.'));
+    if(Number.isFinite(n))t.textContent=n.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2});
+  });
 }
 
-function twoDecimalCharts(){
-  $$('#weight-chart text,#weight-chart-2 text').forEach(t=>{const n=Number(String(t.textContent).replace(',','.'));if(Number.isFinite(n))t.textContent=n.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})});
-}
-function install(){fixShell();ensureCalendarRepair();twoDecimalCharts()}
-let queued=false;new MutationObserver(()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;install()})}).observe(document.documentElement,{subtree:true,childList:true,characterData:true});
-document.addEventListener('DOMContentLoaded',install);window.addEventListener('load',()=>{install();setTimeout(install,300);setTimeout(install,1200)});document.addEventListener('click',e=>{if(e.target.closest('[data-page],[data-page-link],#menu-toggle'))setTimeout(install,30)},true);
+function install(){fixShell();twoDecimalCharts()}
+document.addEventListener('DOMContentLoaded',install);
+window.addEventListener('load',()=>{install();setTimeout(install,300)});
+document.addEventListener('click',e=>{if(e.target.closest('[data-page],[data-page-link],#menu-toggle'))setTimeout(install,30)},true);
