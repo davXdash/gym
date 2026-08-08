@@ -2,7 +2,7 @@ import {createClient} from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2
 import {SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY} from './supabase-config.js';
 
 const supabase=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
-const SNAP='gym-snapshot-v11',EDIT='gym-v53-edit',OFF='gym-offline-v11',MIG='gym-v73-cadence-migrated';
+const SNAP='gym-snapshot-v11',EDIT='gym-v53-edit',OFF='gym-offline-v11',MIG='gym-v74-cadence-migrated',RECOVERY='gym-v74-august-recovered';
 const ACTIVE=new Set(['planned','confirmed','started']);
 const q=(s,r=document)=>r.querySelector(s);
 const read=(k,f)=>{try{return JSON.parse(localStorage.getItem(k))??f}catch{return f}};
@@ -50,19 +50,38 @@ function buildRotation(s,anchorDate,anchorCode,count){
   for(let i=0;i<count;i++){out.push({date,code,plan_workout_id:byCode[code]});date=nextDate(date);code=other(code)}
   return out;
 }
+
 async function replaceOpenRotation(s,anchorDate,anchorCode,count,statusEl=null){
-  const done=doneKeys(s),active=(s.schedule||[]).filter(x=>ACTIVE.has(x.status)&&!done.has(`${x.date}|${x.code}`)).sort((a,b)=>a.date.localeCompare(b.date));
-  const rotation=buildRotation(s,anchorDate,anchorCode,Math.max(count,active.length,12));
-  const ids=new Set(active.map(x=>String(x.id)));
-  s.schedule=(s.schedule||[]).filter(x=>!ids.has(String(x.id)));
-  rotation.forEach((a,i)=>s.schedule.push({id:`local-v73-${Date.now()}-${i}`,date:a.date,scheduled_date:a.date,code:a.code,plan_workout_id:a.plan_workout_id,status:'planned'}));
+  const done=doneKeys(s);
+  const active=(s.schedule||[]).filter(x=>ACTIVE.has(x.status)&&!done.has(`${x.date}|${x.code}`)).sort((a,b)=>a.date.localeCompare(b.date));
+  const rotation=buildRotation(s,anchorDate,anchorCode,Math.max(count,active.length,30));
+  const byCode=Object.fromEntries(Object.values(s.workouts||{}).map(w=>[w.code,w.id]));
+  if(!byCode.A||!byCode.B){if(statusEl)statusEl.textContent='Trainingsplan A/B konnte nicht aufgelöst werden.';return false}
+
+  // Local view first, but do not destroy the database until all writes succeeded.
+  const activeIds=new Set(active.map(x=>String(x.id)));
+  s.schedule=(s.schedule||[]).filter(x=>!activeIds.has(String(x.id)));
+  rotation.forEach((a,i)=>s.schedule.push({id:active[i]?.id||`local-v74-${Date.now()}-${i}`,date:a.date,scheduled_date:a.date,code:a.code,plan_workout_id:a.plan_workout_id,status:'planned'}));
   write(SNAP,s);renderHero();
   if(!online()){if(statusEl)statusEl.textContent='Offline gespeichert. Synchronisierung folgt online.';return true}
+
   try{
     const u=await user();
-    for(const old of active){if(!old.id||String(old.id).startsWith('local-'))continue;const r=await supabase.from('scheduled_workouts').delete().eq('id',old.id);if(r.error)throw r.error}
-    const rows=rotation.map(a=>({user_id:u.id,plan_workout_id:a.plan_workout_id,scheduled_date:a.date,status:'planned'}));
-    if(rows.length){const r=await supabase.from('scheduled_workouts').insert(rows);if(r.error)throw r.error}
+    // 1) Update existing rows in place.
+    for(let i=0;i<Math.min(active.length,rotation.length);i++){
+      const old=active[i],a=rotation[i];
+      if(!old.id||String(old.id).startsWith('local-'))continue;
+      const r=await supabase.from('scheduled_workouts').update({plan_workout_id:a.plan_workout_id,scheduled_date:a.date,status:'planned'}).eq('id',old.id);
+      if(r.error)throw r.error;
+    }
+    // 2) Insert missing rows.
+    const missing=rotation.slice(active.length).map(a=>({user_id:u.id,plan_workout_id:a.plan_workout_id,scheduled_date:a.date,status:'planned'}));
+    if(missing.length){const r=await supabase.from('scheduled_workouts').insert(missing);if(r.error)throw r.error}
+    // 3) Only after successful update/insert remove surplus rows.
+    for(const old of active.slice(rotation.length)){
+      if(!old.id||String(old.id).startsWith('local-'))continue;
+      const r=await supabase.from('scheduled_workouts').delete().eq('id',old.id);if(r.error)throw r.error;
+    }
     localStorage.removeItem(SNAP);return true;
   }catch(e){if(statusEl)statusEl.textContent=`Speichern fehlgeschlagen: ${e.message}`;console.error(e);return false}
 }
@@ -77,9 +96,19 @@ async function migrateLegacyCadence(){
   const s=snap(),rows=openRows(s);
   if(!looksLikeLegacyThreeDayBug(rows)){localStorage.setItem(MIG,'1');return}
   const first=rows.find(x=>x.date>=today())||rows[0];if(!first)return;
-  localStorage.setItem(MIG,'1');
   const ok=await replaceOpenRotation(s,first.date,first.code,rows.length);
-  if(ok&&online())location.reload();
+  if(ok){localStorage.setItem(MIG,'1');if(online())location.reload()}
+}
+
+async function recoverBrokenAugust(){
+  if(localStorage.getItem(RECOVERY)==='1'||today()!=='2026-08-08')return;
+  const s=snap(),done=completedSorted(s),last=done.at(-1),rows=openRows(s);
+  const firstFuture=rows.find(x=>x.date>=today());
+  // Exact recovery for the state reported on 08.08.2026: A 03.08., B 05.08., then the future rotation vanished.
+  if(last?.date==='2026-08-05'&&last?.code==='B'&&(!firstFuture||firstFuture.date>'2026-08-12')){
+    const ok=await replaceOpenRotation(s,'2026-08-09','A',30);
+    if(ok){localStorage.setItem(RECOVERY,'1');if(online())location.reload()}
+  }else localStorage.setItem(RECOVERY,'1');
 }
 
 function ensureDialog(){
@@ -110,7 +139,7 @@ function interceptStart(e){
   q(`#workout-list [data-workout="${code}"]`)?.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,view:window}));
 }
 function install(){
-  renderHero();setTimeout(migrateLegacyCadence,900);[250,700,1500].forEach(ms=>setTimeout(()=>{renderHero();maybeAsk()},ms));
+  renderHero();setTimeout(recoverBrokenAugust,500);setTimeout(migrateLegacyCadence,1400);[250,700,1500].forEach(ms=>setTimeout(()=>{renderHero();maybeAsk()},ms));
   const hero=q('.hero');if(hero)new MutationObserver(()=>queueMicrotask(renderHero)).observe(hero,{subtree:true,childList:true,characterData:true});
 }
 document.addEventListener('click',interceptStart,true);
