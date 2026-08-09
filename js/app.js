@@ -1,118 +1,53 @@
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './supabase-config.js';
+import {createClient} from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+import {SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY} from './supabase-config.js';
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+const supabase=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+const SNAP='gym-snapshot-v11',QUEUE='gym-queue-v11',OFF='gym-offline-v11',THEME='gym-theme';
+const q=s=>document.querySelector(s),qa=s=>[...document.querySelectorAll(s)];
+const read=(k,f)=>{try{return JSON.parse(localStorage.getItem(k))??f}catch{return f}};
+const write=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+const iso=(d=new Date())=>new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Berlin'}).format(d);
+const pd=s=>new Date(`${s}T12:00:00`);
+let session=null,snapshot=read(SNAP,{plan:{},workouts:{},schedule:[],completed:[],weights:[],measurements:[]}),viewed=new Date(),manualOffline=localStorage.getItem(OFF)==='1',planningItem=null;
+const online=()=>navigator.onLine&&!manualOffline;
 
-const plans = {
-  A: {
-    title: 'Training A',
-    focus: 'Brust · Rückenbreite · seitliche Schulter',
-    exercises: [
-      ['Schrägbankdrückmaschine dual','3 Sätze · 6–10 Wdh. · 150–180 Sek.','Letzter Satz bis keine vollständige saubere Wiederholung mehr möglich ist.'],
-      ['Latzugstation mit Oberschenkelpolster','3 Sätze · 8–12 Wdh. · 120 Sek.','Brust leicht anheben, Ellbogen nach unten führen, nicht zurückschwingen.'],
-      ['Brustpresse sitzend','3 Sätze · 8–12 Wdh. · 120 Sek.','Schulterblätter an der Lehne halten.'],
-      ['Rudermaschine mit Brustpolster','3 Sätze · 8–12 Wdh. · 120 Sek.','Brust bleibt am Polster, vollständig kontrolliert strecken.'],
-      ['Seithebemaschine ohne Armpolster','4 Sätze · 12–20 Wdh. · 75–90 Sek.','Letzte zwei Sätze bis zum sauberen Muskelversagen.'],
-      ['Butterfly reverse mit Griffen','3 Sätze · 12–18 Wdh. · 90 Sek.','Schultern unten lassen, nicht mit dem Kopf nach vorne gehen.'],
-      ['Bauchmuskelmaschine','3 Sätze · 10–15 Wdh. · 90 Sek.','Brustkorb Richtung Becken einrollen.']
-    ]
-  },
-  B: {
-    title: 'Training B',
-    focus: 'obere Brust · Rückendicke · hintere Schulter · Arme',
-    exercises: [
-      ['Kurzhantel-Schrägbankdrücken','3 Sätze · 6–10 Wdh. · 180 Sek.','Bank 20–30°. Nicht unter den Hanteln scheitern.'],
-      ['High Row dual','3 Sätze · 8–12 Wdh. · 120 Sek.','Brust am Polster, Ellbogen nach hinten und leicht unten.'],
-      ['Butterfly mit Griffen','3 Sätze · 10–15 Wdh. · 90 Sek.','Weit und kontrolliert öffnen, Schulter nicht nach vorne werfen.'],
-      ['Low Row dual','3 Sätze · 8–12 Wdh. · 120 Sek.','Griff Richtung oberer Bauch, nicht zurückreißen.'],
-      ['Seithebemaschine ohne Armpolster','4 Sätze · 12–20 Wdh. · 75–90 Sek.','Letzte zwei Sätze bis zum sauberen Muskelversagen.'],
-      ['Butterfly reverse mit Griffen','3 Sätze · 12–18 Wdh. · 90 Sek.','Kontrolliert nach außen führen.'],
-      ['Trizepsmaschine Überkopf','2 Sätze · 10–15 Wdh. · 90 Sek.','Letzter Satz bis zum sauberen Muskelversagen.'],
-      ['Bizepsmaschine','2 Sätze · 10–15 Wdh. · 90 Sek.','Oberarme stabil halten.']
-    ]
-  }
-};
+function showOnly(el){['#loading','#login-screen','#dashboard'].forEach(s=>q(s)?.classList.add('hidden'));el?.classList.remove('hidden')}
+function status(){const n=read(QUEUE,[]).length;if(q('#connection-status'))q('#connection-status').textContent=manualOffline?'Offline manuell':navigator.onLine?'Online':'Offline';q('#offline-toggle')?.classList.toggle('active',manualOffline);q('#sync-count')?.classList.toggle('hidden',!n);if(q('#sync-count'))q('#sync-count').textContent=n?`${n} offen`:'';if(q('#settings-queue'))q('#settings-queue').textContent=n}
+function error(title,message){const host=q('#error-stack');if(!host)return;const el=document.createElement('article');el.className='error-banner';el.innerHTML=`<strong>${title}</strong><p>${message}</p><button>×</button>`;el.querySelector('button').onclick=()=>el.remove();host.append(el)}
+function queue(item){const list=read(QUEUE,[]);list.push({...item,queued_at:new Date().toISOString()});write(QUEUE,list);status()}
 
-const loading = document.querySelector('#loading');
-const loginScreen = document.querySelector('#login-screen');
-const dashboard = document.querySelector('#dashboard');
-const loginForm = document.querySelector('#login-form');
-const loginError = document.querySelector('#login-error');
-const workoutList = document.querySelector('#workout-list');
-const dialog = document.querySelector('#workout-dialog');
-const exerciseList = document.querySelector('#exercise-list');
-const dialogTitle = document.querySelector('#dialog-title');
-
-function showOnly(element) {
-  [loading, loginScreen, dashboard].forEach(el => el.classList.add('hidden'));
-  element.classList.remove('hidden');
+async function loadData(){
+ const p=await supabase.from('training_plans').select('*').eq('is_active',true).order('version',{ascending:false}).limit(1);if(p.error)throw p.error;if(!p.data?.length)throw new Error('Kein aktiver Plan');
+ const plan=p.data[0],w=await supabase.from('plan_workouts').select('*').eq('plan_id',plan.id).order('sequence_position');if(w.error)throw w.error;
+ const ids=w.data.map(x=>x.id),pe=await supabase.from('plan_exercises').select('*').in('plan_workout_id',ids).order('exercise_order');if(pe.error)throw pe.error;
+ const exIds=[...new Set(pe.data.map(x=>x.exercise_id))],ex=exIds.length?await supabase.from('exercises').select('id,name,image_path').in('id',exIds):{data:[],error:null};if(ex.error)throw ex.error;
+ const em=Object.fromEntries((ex.data||[]).map(x=>[x.id,x])),workouts={};
+ w.data.forEach(x=>workouts[x.code]={...x,exercises:pe.data.filter(y=>y.plan_workout_id===x.id).map(y=>({...y,name:em[y.exercise_id]?.name||'Übung',image_path:em[y.exercise_id]?.image_path}))});
+ const [s,c,wi,me]=await Promise.all([supabase.from('scheduled_workouts').select('*').order('scheduled_date'),supabase.from('workouts').select('*').in('status',['completed','partial']).order('workout_date'),supabase.from('weigh_ins').select('*').order('measured_at'),supabase.from('body_measurements').select('*').order('measured_at')]);
+ for(const r of[s,c,wi,me])if(r.error)throw r.error;const code=Object.fromEntries(w.data.map(x=>[x.id,x.code]));
+ snapshot={plan,workouts,schedule:s.data.map(x=>({...x,date:x.scheduled_date,code:code[x.plan_workout_id]})),completed:c.data.map(x=>({...x,date:x.workout_date,code:code[x.plan_workout_id]})),weights:wi.data,measurements:me.data};write(SNAP,snapshot)
 }
+async function refresh(){if(online()){try{await loadData()}catch(e){snapshot=read(SNAP,snapshot);error('Datenbankfehler',e.message)}}else snapshot=read(SNAP,snapshot);render()}
 
-function renderPlans() {
-  workoutList.innerHTML = Object.entries(plans).map(([code, plan]) => `
-    <article class="workout-card">
-      <p class="eyebrow">EINHEIT ${code}</p>
-      <h3>${plan.title}</h3>
-      <p class="muted">${plan.focus}</p>
-      <div class="workout-meta"><span>${plan.exercises.length} Übungen</span><span>fortlaufende Rotation</span></div>
-      <button data-workout="${code}">Ansehen</button>
-    </article>`).join('');
-}
+function monthHtml(){const y=viewed.getFullYear(),m=viewed.getMonth(),off=(new Date(y,m,1).getDay()+6)%7,days=new Date(y,m+1,0).getDate(),planned=new Map(snapshot.schedule.map(x=>[x.date,x])),done=new Map(snapshot.completed.map(x=>[x.date,x]));let html='';for(let i=0;i<off;i++)html+='<span></span>';for(let d=1;d<=days;d++){const date=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`,p=planned.get(date),c=done.get(date);html+=`<button class="calendar-day ${date===iso()?'today':''} ${c?'completed':p?'planned':''}" data-date="${date}" data-id="${p?.id||''}"><span>${d}</span>${c?`<small class="plan-badge">${c.code} ✓</small>`:p?`<small class="plan-badge">${p.code}</small>`:''}</button>`}return html}
+function basicChart(el,rows,key){if(!el)return;if(!rows?.length){el.innerHTML='<div class="chart-empty">Noch keine Daten</div>';return}const vals=rows.map(x=>Number(x[key])).filter(Number.isFinite);if(!vals.length){el.innerHTML='<div class="chart-empty">Noch keine Daten</div>';return}const min=Math.min(...vals),max=Math.max(...vals),span=max-min||1,w=320,h=145,p=18,pts=vals.map((v,i)=>`${p+i*(w-2*p)/Math.max(1,vals.length-1)},${h-p-(v-min)/span*(h-2*p)}`).join(' ');el.innerHTML=`<svg viewBox="0 0 ${w} ${h}" class="chart"><polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="3"/></svg>`}
+function render(){const title=new Intl.DateTimeFormat('de-DE',{month:'long',year:'numeric'}).format(viewed);qa('[data-calendar-title]').forEach(x=>x.textContent=title);qa('[data-calendar-grid]').forEach(x=>x.innerHTML=monthHtml());const last=snapshot.weights.at(-1);if(q('#latest-weight'))q('#latest-weight').textContent=last?`${Number(last.weight_kg).toFixed(1)} kg`:'Noch kein Gewicht';if(q('#completed-count'))q('#completed-count').textContent=snapshot.completed.length;if(q('#week-count'))q('#week-count').textContent=snapshot.completed.filter(x=>Math.abs(new Date()-pd(x.date))<7*864e5).length;if(q('#streak-count'))q('#streak-count').textContent='0';const list=q('#workout-list');if(list)list.innerHTML=Object.values(snapshot.workouts).sort((a,b)=>a.sequence_position-b.sequence_position).map(w=>`<article class="workout-card"><small>EINHEIT ${w.code}</small><h3>${w.title}</h3><p>${w.focus||''}</p><button class="secondary" data-workout="${w.code}">Plan öffnen</button></article>`).join('');basicChart(q('#weight-chart'),snapshot.weights,'weight_kg');basicChart(q('#weight-chart-2'),snapshot.weights,'weight_kg');basicChart(q('#waist-chart'),snapshot.measurements,'waist_cm');basicChart(q('#waist-chart-2'),snapshot.measurements,'waist_cm');status()}
 
-function openWorkout(code) {
-  const plan = plans[code];
-  dialogTitle.textContent = plan.title;
-  exerciseList.innerHTML = plan.exercises.map(([name, prescription, notes]) => `
-    <article class="exercise-card">
-      <div class="exercise-image">Bildzuordnung folgt</div>
-      <div class="exercise-body">
-        <h3>${name}</h3>
-        <p class="exercise-prescription">${prescription}</p>
-        <p class="exercise-notes">${notes}</p>
-      </div>
-    </article>`).join('');
-  dialog.showModal();
-}
+function setPage(name){qa('.page').forEach(x=>x.classList.toggle('active',x.id===`page-${name}`));qa('[data-page]').forEach(x=>x.classList.toggle('active',x.dataset.page===name));const title={dashboard:'Dashboard',plan:'Trainingsplan',calendar:'Kalender',weight:'Gewicht',measurements:'Umfänge',progress:'Fortschritt',photos:'Fotos',settings:'Einstellungen',studio:'Studio'}[name]||'Dave';if(q('#page-title'))q('#page-title').textContent=title;closeDrawer();scrollTo(0,0)}
+function openDrawer(){q('#drawer')?.classList.add('open');q('#drawer-backdrop')?.classList.remove('hidden')}
+function closeDrawer(){q('#drawer')?.classList.remove('open');q('#drawer-backdrop')?.classList.add('hidden')}
+function planning(date,id){planningItem=id?snapshot.schedule.find(x=>String(x.id)===String(id)):null;q('#planning-date').textContent=new Intl.DateTimeFormat('de-DE',{weekday:'long',day:'2-digit',month:'long'}).format(pd(date));q('#planning-dialog').dataset.date=date;q('#planning-new').classList.toggle('hidden',!!planningItem);q('#planning-existing').classList.toggle('hidden',!planningItem);if(planningItem)q('#planning-current').textContent=`Training ${planningItem.code} am ${date}`;q('#planning-dialog').showModal()}
+async function createSchedule(code,date){const w=snapshot.workouts[code];if(!online()){snapshot.schedule.push({id:`local-${Date.now()}`,date,code,status:'planned',plan_workout_id:w.id});write(SNAP,snapshot);queue({type:'createSchedule',code,date});return render()}const r=await supabase.from('scheduled_workouts').insert({user_id:session.user.id,plan_workout_id:w.id,scheduled_date:date,status:'planned'});if(r.error)throw r.error;await refresh()}
+async function deleteSchedule(id){if(!online()){snapshot.schedule=snapshot.schedule.filter(x=>String(x.id)!==String(id));write(SNAP,snapshot);queue({type:'deleteSchedule',id});return render()}const r=await supabase.from('scheduled_workouts').delete().eq('id',id);if(r.error)throw r.error;await refresh()}
+async function moveSchedule(id,date){const r=await supabase.from('scheduled_workouts').update({scheduled_date:date,status:'planned'}).eq('id',id);if(r.error)throw r.error;await refresh()}
 
-async function initialise() {
-  renderPlans();
-  const { data: { session } } = await supabase.auth.getSession();
-  showOnly(session ? dashboard : loginScreen);
-}
+async function saveWeight(){const v=Number(q('#weight-input').value.replace(',','.'));if(!(v>=30&&v<=300)){q('#weight-status').textContent='Bitte gültiges Gewicht eintragen.';return}const time=q('#weight-time').value||new Date().toTimeString().slice(0,5),measured_at=`${iso()}T${time}:00`,val=n=>q(`[data-chip-group="${n}"] .active`)?.dataset.value||'unknown',trained=val('trained'),payload={user_id:session.user.id,weight_kg:v,measured_at,toilet_status:val('toilet'),food_status:val('food'),late_meal:val('late'),trained_previous_day:trained==='yesterday',notes:trained==='today'?'training_today':''};if(!online()){snapshot.weights.push(payload);write(SNAP,snapshot);queue({type:'weight',payload})}else{const r=await supabase.from('weigh_ins').insert(payload);if(r.error){q('#weight-status').textContent=r.error.message;return}}q('#weight-status').textContent='Gespeichert.';await refresh()}
+const number=id=>{const v=Number(q(id).value.replace(',','.'));return Number.isFinite(v)&&v>0?v:null};
+async function saveMeasurement(){const payload={user_id:session.user.id,measured_at:new Date().toISOString(),chest_cm:number('#m-chest'),waist_cm:number('#m-waist'),shoulder_cm:number('#m-shoulder'),upper_arm_left_cm:number('#m-arm-left'),upper_arm_right_cm:number('#m-arm-right'),notes:JSON.stringify({abdomen_cm:number('#m-abdomen'),hip_cm:number('#m-hip'),thigh_left_cm:number('#m-thigh-left'),thigh_right_cm:number('#m-thigh-right'),neck_cm:number('#m-neck')})};if(!online()){snapshot.measurements.push(payload);write(SNAP,snapshot);queue({type:'measurement',payload})}else{const r=await supabase.from('body_measurements').insert(payload);if(r.error){q('#measurement-status').textContent=r.error.message;return}}q('#measurement-status').textContent='Gespeichert.';await refresh()}
+async function sync(){if(!online())return error('Synchronisierung nicht möglich','Offline-Modus ist aktiv oder keine Verbindung vorhanden.');const list=read(QUEUE,[]),rest=[];for(const item of list){try{if(item.type==='weight')await supabase.from('weigh_ins').insert(item.payload).throwOnError();else if(item.type==='measurement')await supabase.from('body_measurements').insert(item.payload).throwOnError();else if(item.type==='deleteSchedule')await supabase.from('scheduled_workouts').delete().eq('id',item.id).throwOnError();else if(item.type==='createSchedule')await createSchedule(item.code,item.date)}catch{rest.push(item)}}write(QUEUE,rest);await refresh()}
 
-loginForm.addEventListener('submit', async event => {
-  event.preventDefault();
-  loginError.textContent = '';
-  const email = document.querySelector('#email').value.trim();
-  const password = document.querySelector('#password').value;
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) {
-    loginError.textContent = 'Anmeldung fehlgeschlagen. E-Mail und Passwort prüfen.';
-    return;
-  }
-  loginForm.reset();
-  showOnly(dashboard);
-});
+function bind(){q('#menu-toggle')?.addEventListener('click',openDrawer);q('#drawer-close')?.addEventListener('click',closeDrawer);q('#drawer-backdrop')?.addEventListener('click',closeDrawer);qa('[data-page]').forEach(b=>b.addEventListener('click',()=>setPage(b.dataset.page)));qa('[data-page-link]').forEach(b=>b.addEventListener('click',()=>setPage(b.dataset.pageLink)));q('#theme-toggle')?.addEventListener('click',()=>{const next=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=next;localStorage.setItem(THEME,next)});q('#settings-theme')?.addEventListener('click',()=>q('#theme-toggle')?.click());q('#offline-toggle')?.addEventListener('click',()=>{manualOffline=!manualOffline;localStorage.setItem(OFF,manualOffline?'1':'0');status()});q('#settings-offline')?.addEventListener('click',()=>q('#offline-toggle')?.click());q('#sync-now')?.addEventListener('click',sync);q('#settings-sync')?.addEventListener('click',sync);q('#save-weight')?.addEventListener('click',saveWeight);q('#save-measurement')?.addEventListener('click',saveMeasurement);q('#planning-close')?.addEventListener('click',()=>q('#planning-dialog').close());qa('[data-plan-code]').forEach(b=>b.addEventListener('click',async()=>{await createSchedule(b.dataset.planCode,q('#planning-dialog').dataset.date);q('#planning-dialog').close()}));q('#planning-delete')?.addEventListener('click',async()=>{if(planningItem){await deleteSchedule(planningItem.id);q('#planning-dialog').close()}});q('#planning-move')?.addEventListener('click',async()=>{if(!planningItem)return;const date=prompt('Neues Datum (JJJJ-MM-TT)',planningItem.date);if(date){await moveSchedule(planningItem.id,date);q('#planning-dialog').close()}});document.addEventListener('click',e=>{const day=e.target.closest('.calendar-day');if(day)planning(day.dataset.date,day.dataset.id||null)});qa('[data-prev-month]').forEach(b=>b.addEventListener('click',()=>{viewed=new Date(viewed.getFullYear(),viewed.getMonth()-1,1);render()}));qa('[data-next-month]').forEach(b=>b.addEventListener('click',()=>{viewed=new Date(viewed.getFullYear(),viewed.getMonth()+1,1);render()}));qa('.chip-group .chip').forEach(b=>b.addEventListener('click',()=>{const group=b.closest('.chip-group');qa('.chip',group).forEach(x=>x.classList.remove('active'));b.classList.add('active')}));q('#logout')?.addEventListener('click',async()=>{await supabase.auth.signOut();showOnly(q('#login-screen'))});window.addEventListener('online',status);window.addEventListener('offline',status)}
 
-document.querySelector('#logout').addEventListener('click', async () => {
-  await supabase.auth.signOut();
-  sessionStorage.clear();
-  localStorage.removeItem('gym-current-workout');
-  showOnly(loginScreen);
-});
-
-document.querySelector('#start-workout').addEventListener('click', () => openWorkout('A'));
-workoutList.addEventListener('click', event => {
-  const button = event.target.closest('[data-workout]');
-  if (button) openWorkout(button.dataset.workout);
-});
-document.querySelector('#close-dialog').addEventListener('click', () => dialog.close());
-
-supabase.auth.onAuthStateChange((_event, session) => {
-  showOnly(session ? dashboard : loginScreen);
-});
-
-initialise().catch(() => {
-  loginError.textContent = 'Die App konnte nicht vollständig geladen werden.';
-  showOnly(loginScreen);
-});
+async function enter(){showOnly(q('#loading'));await refresh();showOnly(q('#dashboard'));render()}
+async function boot(){document.documentElement.dataset.theme=localStorage.getItem(THEME)||'light';bind();const {data:{session:s}}=await supabase.auth.getSession();session=s;if(session)await enter();else showOnly(q('#login-screen'));q('#login-form')?.addEventListener('submit',async e=>{e.preventDefault();q('#login-error').textContent='';const r=await supabase.auth.signInWithPassword({email:q('#email').value,password:q('#password').value});if(r.error){q('#login-error').textContent=r.error.message;return}session=r.data.session;await enter()})}
+boot();
