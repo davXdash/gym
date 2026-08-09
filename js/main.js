@@ -27,7 +27,7 @@ await load('./workout.js','approved workout interface');
 
 await load('./studio-page-v35.js','studio');
 await load('./device-photo-v36.js','device photos');
-await load('./progress-live-v62.js','progress charts');
+await load('./progress.js','progress charts');
 await load('./status-fix-v26.js','shell polish');
 await load('./sync-policy-v22.js','sync policy');
 await load('./schedule.js','schedule rotation');
