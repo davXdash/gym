@@ -23,9 +23,7 @@ stylesheet('./css/workout.css');
 await load('./app-v53.js','workout data engine');
 await load('./app-v54.js','workout add/reorder actions');
 await load('./app-v55.js','device history');
-await load('./workout.js','approved workout interface');
-await load('./workout-gym.js','direct gym controls');
-await load('./workout-practical.js','practical workout behavior');
+await load('./workout.js','workout interface');
 
 await load('./studio-page-v35.js','studio');
 await load('./device-photo-v36.js','device photos');
