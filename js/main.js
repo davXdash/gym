@@ -25,6 +25,7 @@ await load('./app-v54.js','workout add/reorder actions');
 await load('./app-v55.js','device history');
 await load('./workout.js','approved workout interface');
 await load('./workout-practical.js','practical workout behavior');
+await load('./workout-controls.js','central workout controls');
 
 await load('./studio-page-v35.js','studio');
 await load('./device-photo-v36.js','device photos');
