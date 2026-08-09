@@ -1,0 +1,11 @@
+const STUDIO_KEY='gym-studio-profile-v32';
+const q=(s,r=document)=>r.querySelector(s),qa=(s,r=document)=>[...r.querySelectorAll(s)];
+const read=(k,f={})=>{try{return JSON.parse(localStorage.getItem(k))??f}catch{return f}};
+const norm=s=>String(s||'').toLowerCase().replace(/[ä]/g,'a').replace(/[ö]/g,'o').replace(/[ü]/g,'u').replace(/ß/g,'ss').replace(/[^a-z0-9]+/g,' ').trim();
+function profile(){return read(STUDIO_KEY,{studio:'John Reed Essen',devices:{}})}
+function findDevice(name){const devices=profile().devices||{},needle=norm(name);const exact=Object.entries(devices).find(([n])=>norm(n)===needle);if(exact)return{name:exact[0],...exact[1]};const partial=Object.entries(devices).find(([n])=>needle.includes(norm(n))||norm(n).includes(needle));return partial?{name:partial[0],...partial[1]}:null}
+function setupLines(device){if(!device)return[];const s=device.setup||{},labels={seat:'Sitzhöhe',backrest:'Rückenlehne',chest_pad:'Brustpolster',start_position:'Startposition',bench_angle:'Bankwinkel',grip:'Griff',weight_steps:'Gewichtsstufen',notes:'Notiz'};return Object.entries(labels).filter(([k])=>String(s[k]||'').trim()).map(([k,l])=>`<span><b>${l}</b>${s[k]}</span>`)}
+function inject(){qa('#exercise-list .exercise-card').forEach(card=>{const title=q('h3',card)?.textContent?.trim();if(!title)return;const device=findDevice(title);let box=q('.device-setup',card);if(!box){box=document.createElement('section');box.className='device-setup';const anchor=q('.variant-shell',card)||q('.exercise-v18-head',card)||q('h3',card);anchor?.insertAdjacentElement('afterend',box)}const lines=setupLines(device);box.innerHTML=device&&lines.length?`<div class="device-setup-head"><strong>Dein Geräte-Setup</strong><small>${profile().studio||'Studio'}</small></div><div class="device-setup-grid">${lines.join('')}</div>`:`<button type="button" class="device-setup-link" data-open-studio>Geräte-Setup ergänzen</button>`})}
+const observer=new MutationObserver(()=>requestAnimationFrame(inject));
+window.addEventListener('load',()=>setTimeout(()=>{inject();const list=q('#exercise-list');if(list)observer.observe(list,{childList:true,subtree:true})},500));
+document.addEventListener('click',e=>{if(e.target.closest('[data-open-studio]'))document.querySelector('[data-page="studio"]')?.click()},true);
