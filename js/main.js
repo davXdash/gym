@@ -19,10 +19,12 @@ function stylesheet(path){
 }
 
 stylesheet('./css/workout.css');
+stylesheet('./css/photos.css');
 
 await load('./workout.js','workout');
 await load('./studio-page-v35.js','studio');
-await load('./device-photo-v36.js','device photos');
+await load('./device-setup.js','device setup');
+await load('./photos.js','photos');
 await load('./progress.js','progress charts');
 await load('./weight.js','weight');
 await load('./status-fix-v26.js','shell polish');
