@@ -28,6 +28,7 @@ const expectedCode=s=>{const d=completed(s);return d.length?other(d.at(-1).code)
 const activeRows=s=>{const done=doneKeys(s);return (s.schedule||[]).filter(x=>ACTIVE.has(x.status)&&(x.code==='A'||x.code==='B')&&!done.has(`${x.date}|${x.code}`)).sort((a,b)=>a.date.localeCompare(b.date))};
 const blocked=()=>new Set(read(BLOCKED,[]));
 const actionable=s=>{const expected=expectedCode(s),rows=activeRows(s);return rows.find(x=>x.code===expected)||rows[0]||null};
+let normalizing=false;
 
 function isMonday(date){return pd(date).getDay()===1}
 function avoidDate(date){
@@ -59,6 +60,7 @@ function needsRepair(s,rows){
   return false;
 }
 async function user(){const r=await supabase.auth.getSession();if(r.error||!r.data.session)throw new Error('Bitte neu anmelden.');return r.data.session.user}
+function requestAppRefresh(){window.dispatchEvent(new CustomEvent('gym:schedule-refresh'))}
 
 function renderHero(){
   const s=snap(),item=actionable(s),expected=expectedCode(s),title=q('#next-workout'),date=q('#next-date'),start=q('#start-workout');if(!title||!date||!start)return;
@@ -85,29 +87,32 @@ async function writeRotation(s,rotation){
     const ins=await supabase.from('scheduled_workouts').insert(rotation.map(r=>({user_id:u.id,plan_workout_id:ids[r.code],scheduled_date:r.date,status:'planned'})));
     if(ins.error)throw ins.error;
   }
-  localStorage.removeItem(SNAP);
 }
 
 async function normalizeAndExtend(force=false){
-  const s=snap(),rows=activeRows(s),expected=expectedCode(s),future=rows.filter(x=>x.date>=today());
-  const anchor=future.find(x=>x.code===expected)?.date||future[0]?.date||today();
-  if(force||needsRepair(s,rows)){
-    const rotation=build(anchor,expected);
-    await writeRotation(s,rotation);
-    localStorage.setItem(NORMALIZED,'1');
-    if(online())location.reload();
-    return;
-  }
-  const current=activeRows(s).filter(x=>x.date>=today());
-  if(!current.length)return normalizeAndExtend(true);
-  if(current.at(-1).date>=horizonEnd())return;
-  const tail=current.at(-1),extra=build(following(tail.date),other(tail.code));if(!extra.length)return;
-  const ids=planIds(s);
-  if(online()){
-    const u=await user();const res=await supabase.from('scheduled_workouts').insert(extra.map(r=>({user_id:u.id,plan_workout_id:ids[r.code],scheduled_date:r.date,status:'planned'})));if(res.error)throw res.error;localStorage.removeItem(SNAP);location.reload();
-  }else{
-    extra.forEach((r,i)=>s.schedule.push({id:`local-extra-${Date.now()}-${i}`,date:r.date,scheduled_date:r.date,code:r.code,plan_workout_id:ids[r.code],status:'planned'}));write(SNAP,s);renderHero();
-  }
+  if(normalizing)return;
+  normalizing=true;
+  try{
+    const s=snap(),rows=activeRows(s),expected=expectedCode(s),future=rows.filter(x=>x.date>=today());
+    const anchor=future.find(x=>x.code===expected)?.date||future[0]?.date||today();
+    if(force||needsRepair(s,rows)){
+      const rotation=build(anchor,expected);
+      await writeRotation(s,rotation);
+      localStorage.setItem(NORMALIZED,'1');
+      if(online())requestAppRefresh();
+      return;
+    }
+    const current=activeRows(s).filter(x=>x.date>=today());
+    if(!current.length){localStorage.removeItem(NORMALIZED);return}
+    if(current.at(-1).date>=horizonEnd())return;
+    const tail=current.at(-1),extra=build(following(tail.date),other(tail.code));if(!extra.length)return;
+    const ids=planIds(s);
+    if(online()){
+      const u=await user();const res=await supabase.from('scheduled_workouts').insert(extra.map(r=>({user_id:u.id,plan_workout_id:ids[r.code],scheduled_date:r.date,status:'planned'})));if(res.error)throw res.error;requestAppRefresh();
+    }else{
+      extra.forEach((r,i)=>s.schedule.push({id:`local-extra-${Date.now()}-${i}`,date:r.date,scheduled_date:r.date,code:r.code,plan_workout_id:ids[r.code],status:'planned'}));write(SNAP,s);renderHero();
+    }
+  }finally{normalizing=false}
 }
 
 function ensureMissedDialog(){
@@ -116,7 +121,7 @@ function ensureMissedDialog(){
   document.body.append(d);q('[data-missed-close]',d).onclick=()=>d.close();
   q('[data-missed-no]',d).onclick=()=>{q('[data-missed-question]',d).hidden=true;q('[data-missed-plan]',d).hidden=false;q('[data-missed-date]',d).value=add(today(),1)};
   q('[data-missed-yes]',d).onclick=()=>{const s=snap(),item=actionable(s),code=expectedCode(s);if(!item)return d.close();write(EDIT,{code,workout_date:item.date,workout_id:null,exercises:[]});d.close();q(`#workout-list [data-workout="${code}"]`)?.click()};
-  q('[data-missed-save]',d).onclick=async()=>{const value=q('[data-missed-date]',d).value,status=q('[data-missed-status]',d);if(!value||value<today()){status.textContent='Bitte heute oder ein zukünftiges Datum wählen.';return}status.textContent='Kalender wird angepasst …';try{const s=snap(),rotation=build(value,expectedCode(s));await writeRotation(s,rotation);localStorage.setItem(NORMALIZED,'1');d.close();if(online())location.reload()}catch(e){status.textContent=e.message}};
+  q('[data-missed-save]',d).onclick=async()=>{const value=q('[data-missed-date]',d).value,status=q('[data-missed-status]',d);if(!value||value<today()){status.textContent='Bitte heute oder ein zukünftiges Datum wählen.';return}status.textContent='Kalender wird angepasst …';try{const s=snap(),rotation=build(value,expectedCode(s));await writeRotation(s,rotation);localStorage.setItem(NORMALIZED,'1');d.close();if(online())requestAppRefresh()}catch(e){status.textContent=e.message}};
   return d;
 }
 function maybeAskMissed(){
