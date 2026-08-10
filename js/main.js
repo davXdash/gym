@@ -27,6 +27,7 @@ await load('./device-setup.js','device setup');
 await load('./photos.js','photos');
 await load('./progress.js','progress charts');
 await load('./weight.js','weight');
+await load('./export.js','data export');
 await load('./status-fix-v26.js','shell polish');
 await load('./sync-policy-v22.js','sync policy');
 await load('./schedule.js','schedule rotation');
