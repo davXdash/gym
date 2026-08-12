@@ -21,6 +21,7 @@ function stylesheet(path){
 stylesheet('./css/workout.css');
 stylesheet('./css/photos.css');
 
+await load('./data-loader.js','data loader');
 await load('./workout.js','workout');
 await load('./studio-page-v35.js','studio');
 await load('./device-setup.js','device setup');
