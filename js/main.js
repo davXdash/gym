@@ -23,7 +23,6 @@ stylesheet('./css/photos.css');
 
 await load('./data-loader.js','data loader');
 await load('./workout.js','workout');
-await load('./workout-preferences.js','workout preferences');
 await load('./studio-page-v35.js','studio');
 await load('./device-setup.js','device setup');
 await load('./photos.js','photos');
@@ -33,4 +32,3 @@ await load('./export.js','data export');
 await load('./status-fix-v26.js','shell polish');
 await load('./sync-policy-v22.js','sync policy');
 await load('./schedule.js','schedule rotation');
-await load('./schedule-missed-fix.js','missed workout reschedule');
