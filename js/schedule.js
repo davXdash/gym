@@ -89,6 +89,20 @@ async function writeRotation(s,rotation){
   }
 }
 
+async function deleteMissed(item,s){
+  if(!item)return;
+  if(online()){
+    const u=await user();
+    let req=supabase.from('scheduled_workouts').delete().eq('user_id',u.id);
+    if(item.id)req=req.eq('id',item.id);
+    else req=req.eq('scheduled_date',item.date).eq('plan_workout_id',item.plan_workout_id);
+    const res=await req;
+    if(res.error)throw res.error;
+  }
+  s.schedule=(s.schedule||[]).filter(x=>String(x.id)!==String(item.id));
+  write(SNAP,s);
+}
+
 async function normalizeAndExtend(force=false){
   if(normalizing)return;
   normalizing=true;
@@ -121,7 +135,7 @@ function ensureMissedDialog(){
   document.body.append(d);q('[data-missed-close]',d).onclick=()=>d.close();
   q('[data-missed-no]',d).onclick=()=>{q('[data-missed-question]',d).hidden=true;q('[data-missed-plan]',d).hidden=false;q('[data-missed-date]',d).value=add(today(),1)};
   q('[data-missed-yes]',d).onclick=()=>{const s=snap(),item=actionable(s),code=expectedCode(s);if(!item)return d.close();write(EDIT,{code,workout_date:item.date,workout_id:null,exercises:[]});d.close();q(`#workout-list [data-workout="${code}"]`)?.click()};
-  q('[data-missed-save]',d).onclick=async()=>{const value=q('[data-missed-date]',d).value,status=q('[data-missed-status]',d);if(!value||value<today()){status.textContent='Bitte heute oder ein zukünftiges Datum wählen.';return}status.textContent='Kalender wird angepasst …';try{const s=snap(),rotation=build(value,expectedCode(s));await writeRotation(s,rotation);localStorage.setItem(NORMALIZED,'1');d.close();if(online())requestAppRefresh()}catch(e){status.textContent=e.message}};
+  q('[data-missed-save]',d).onclick=async()=>{const value=q('[data-missed-date]',d).value,status=q('[data-missed-status]',d);if(!value||value<today()){status.textContent='Bitte heute oder ein zukünftiges Datum wählen.';return}status.textContent='Kalender wird angepasst …';try{const s=snap(),item=actionable(s),code=expectedCode(s);if(!item)throw new Error('Der offene Termin wurde nicht gefunden.');await deleteMissed(item,s);const rotation=build(value,code);await writeRotation(s,rotation);localStorage.setItem(NORMALIZED,'1');d.close();renderHero();if(online())requestAppRefresh()}catch(e){status.textContent=e.message}};
   return d;
 }
 function maybeAskMissed(){
