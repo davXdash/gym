@@ -73,34 +73,52 @@ function renderHero(){
   start.dataset.workout=expected;start.dataset.scheduleDate=item.date;
 }
 
+function mirrorRotation(s,rotation,ids){
+  s.schedule=(s.schedule||[]).filter(x=>x.date<today()||!ACTIVE.has(x.status));
+  rotation.forEach((r,i)=>s.schedule.push({
+    id:`local-schedule-${Date.now()}-${i}`,
+    date:r.date,
+    scheduled_date:r.date,
+    code:r.code,
+    plan_workout_id:ids[r.code],
+    status:'planned'
+  }));
+  s.schedule.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  write(SNAP,s);
+  renderHero();
+}
+
 async function writeRotation(s,rotation){
   const ids=planIds(s);if(!ids.A||!ids.B)throw new Error('Trainingsplan A/B fehlt.');
   if(!online()){
-    s.schedule=(s.schedule||[]).filter(x=>x.date<today()||!ACTIVE.has(x.status));
-    rotation.forEach((r,i)=>s.schedule.push({id:`local-schedule-${Date.now()}-${i}`,date:r.date,scheduled_date:r.date,code:r.code,plan_workout_id:ids[r.code],status:'planned'}));
-    write(SNAP,s);renderHero();return;
+    mirrorRotation(s,rotation,ids);
+    return;
   }
   const u=await user();
-  const del=await supabase.from('scheduled_workouts').delete().eq('user_id',u.id).gte('scheduled_date',today());
+  const del=await supabase.from('scheduled_workouts').delete().eq('user_id',u.id).gte('scheduled_date',today()).in('status',['planned','confirmed','started']);
   if(del.error)throw del.error;
   if(rotation.length){
     const ins=await supabase.from('scheduled_workouts').insert(rotation.map(r=>({user_id:u.id,plan_workout_id:ids[r.code],scheduled_date:r.date,status:'planned'})));
     if(ins.error)throw ins.error;
   }
+  mirrorRotation(s,rotation,ids);
 }
 
-async function deleteMissed(item,s){
+async function markMissedSkipped(item,s){
   if(!item)return;
   if(online()){
     const u=await user();
-    let req=supabase.from('scheduled_workouts').delete().eq('user_id',u.id);
-    if(item.id)req=req.eq('id',item.id);
+    let req=supabase.from('scheduled_workouts').update({status:'skipped'}).eq('user_id',u.id);
+    if(item.id&&!String(item.id).startsWith('local-'))req=req.eq('id',item.id);
     else req=req.eq('scheduled_date',item.date).eq('plan_workout_id',item.plan_workout_id);
-    const res=await req;
+    const res=await req.select('id,status,scheduled_date');
     if(res.error)throw res.error;
+    if(!res.data?.length)throw new Error('Der ausgefallene Termin konnte in der Datenbank nicht markiert werden.');
   }
-  s.schedule=(s.schedule||[]).filter(x=>String(x.id)!==String(item.id));
+  const row=(s.schedule||[]).find(x=>String(x.id)===String(item.id))||(s.schedule||[]).find(x=>x.date===item.date&&x.code===item.code);
+  if(row)row.status='skipped';
   write(SNAP,s);
+  renderHero();
 }
 
 async function normalizeAndExtend(force=false){
@@ -122,7 +140,8 @@ async function normalizeAndExtend(force=false){
     const tail=current.at(-1),extra=build(following(tail.date),other(tail.code));if(!extra.length)return;
     const ids=planIds(s);
     if(online()){
-      const u=await user();const res=await supabase.from('scheduled_workouts').insert(extra.map(r=>({user_id:u.id,plan_workout_id:ids[r.code],scheduled_date:r.date,status:'planned'})));if(res.error)throw res.error;requestAppRefresh();
+      const u=await user();const res=await supabase.from('scheduled_workouts').insert(extra.map(r=>({user_id:u.id,plan_workout_id:ids[r.code],scheduled_date:r.date,status:'planned'})));if(res.error)throw res.error;
+      extra.forEach((r,i)=>s.schedule.push({id:`local-extra-${Date.now()}-${i}`,date:r.date,scheduled_date:r.date,code:r.code,plan_workout_id:ids[r.code],status:'planned'}));write(SNAP,s);renderHero();requestAppRefresh();
     }else{
       extra.forEach((r,i)=>s.schedule.push({id:`local-extra-${Date.now()}-${i}`,date:r.date,scheduled_date:r.date,code:r.code,plan_workout_id:ids[r.code],status:'planned'}));write(SNAP,s);renderHero();
     }
@@ -133,9 +152,23 @@ function ensureMissedDialog(){
   let d=q('#missed-clean');if(d)return d;
   d=document.createElement('dialog');d.id='missed-clean';d.innerHTML='<div style="padding:20px;min-width:min(88vw,430px)"><div style="display:flex;justify-content:space-between;gap:12px"><div><small>TRAINING KLÄREN</small><h2 data-missed-title style="margin:.25rem 0"></h2></div><button type="button" data-missed-close>×</button></div><p data-missed-copy style="color:#737973;line-height:1.45"></p><div data-missed-question style="display:grid;gap:9px"><button class="primary" type="button" data-missed-yes>Ja, durchgeführt</button><button class="secondary" type="button" data-missed-no>Nein, nicht gemacht</button></div><div data-missed-plan hidden style="display:grid;gap:9px;margin-top:12px"><label style="display:grid;gap:6px">Wann machst du das nächste Training?<input type="date" data-missed-date></label><button class="primary" type="button" data-missed-save>Termin übernehmen</button><small data-missed-status></small></div></div>';
   document.body.append(d);q('[data-missed-close]',d).onclick=()=>d.close();
-  q('[data-missed-no]',d).onclick=()=>{q('[data-missed-question]',d).hidden=true;q('[data-missed-plan]',d).hidden=false;q('[data-missed-date]',d).value=add(today(),1)};
+  q('[data-missed-no]',d).onclick=()=>{q('[data-missed-question]',d).hidden=true;q('[data-missed-plan]',d).hidden=false;q('[data-missed-date]',d).value=today()};
   q('[data-missed-yes]',d).onclick=()=>{const s=snap(),item=actionable(s),code=expectedCode(s);if(!item)return d.close();write(EDIT,{code,workout_date:item.date,workout_id:null,exercises:[]});d.close();q(`#workout-list [data-workout="${code}"]`)?.click()};
-  q('[data-missed-save]',d).onclick=async()=>{const value=q('[data-missed-date]',d).value,status=q('[data-missed-status]',d);if(!value||value<today()){status.textContent='Bitte heute oder ein zukünftiges Datum wählen.';return}status.textContent='Kalender wird angepasst …';try{const s=snap(),item=actionable(s),code=expectedCode(s);if(!item)throw new Error('Der offene Termin wurde nicht gefunden.');await deleteMissed(item,s);const rotation=build(value,code);await writeRotation(s,rotation);localStorage.setItem(NORMALIZED,'1');d.close();renderHero();if(online())requestAppRefresh()}catch(e){status.textContent=e.message}};
+  q('[data-missed-save]',d).onclick=async()=>{
+    const value=q('[data-missed-date]',d).value,status=q('[data-missed-status]',d),button=q('[data-missed-save]',d);
+    if(!value||value<today()){status.textContent='Bitte heute oder ein zukünftiges Datum wählen.';return}
+    status.textContent='Wird dauerhaft gespeichert …';button.disabled=true;
+    try{
+      const s=snap(),item=actionable(s),code=expectedCode(s);
+      if(!item)throw new Error('Der offene Termin wurde nicht gefunden.');
+      await markMissedSkipped(item,s);
+      const rotation=build(value,code);
+      await writeRotation(s,rotation);
+      localStorage.setItem(NORMALIZED,'1');
+      d.close();renderHero();
+      if(online())requestAppRefresh();
+    }catch(e){status.textContent=e?.message||String(e);button.disabled=false}
+  };
   return d;
 }
 function maybeAskMissed(){
@@ -143,7 +176,7 @@ function maybeAskMissed(){
   const d=ensureMissedDialog();if(d.open)return;const code=expectedCode(s);
   q('[data-missed-title]',d).textContent=`Training ${code} vom ${fmt(item.date)}`;
   q('[data-missed-copy]',d).textContent=`Für ${fmt(item.date)} war Training ${code} geplant, aber es ist kein abgeschlossenes Training gespeichert. Hast du trainiert?`;
-  q('[data-missed-question]',d).hidden=false;q('[data-missed-plan]',d).hidden=true;q('[data-missed-status]',d).textContent='';d.showModal();
+  q('[data-missed-question]',d).hidden=false;q('[data-missed-plan]',d).hidden=true;q('[data-missed-status]',d).textContent='';q('[data-missed-save]',d).disabled=false;d.showModal();
 }
 function interceptStart(e){
   const b=e.target.closest('#start-workout');if(!b)return;const s=snap(),item=actionable(s),code=expectedCode(s);
