@@ -8,6 +8,7 @@ const EDIT='gym-v53-edit';
 const ACTIVE=new Set(['planned','confirmed','started']);
 const NORMALIZED='gym-schedule-clean-v1';
 const BLOCKED='gym-schedule-blocked-days';
+const MISSED_ACK='gym-schedule-missed-v1';
 const HORIZON_DAYS=32;
 const SUMMER_END='2026-09-01';
 
@@ -25,11 +26,19 @@ const snap=()=>read(SNAP,{workouts:{},schedule:[],completed:[]});
 const doneKeys=s=>new Set((s.completed||[]).filter(x=>x.code).map(x=>`${x.date}|${x.code}`));
 const completed=s=>[...(s.completed||[])].filter(x=>x.code==='A'||x.code==='B').sort((a,b)=>a.date.localeCompare(b.date));
 const expectedCode=s=>{const d=completed(s);return d.length?other(d.at(-1).code):'A'};
-const activeRows=s=>{const done=doneKeys(s);return (s.schedule||[]).filter(x=>ACTIVE.has(x.status)&&(x.code==='A'||x.code==='B')&&!done.has(`${x.date}|${x.code}`)).sort((a,b)=>a.date.localeCompare(b.date))};
+const missedAcks=()=>read(MISSED_ACK,[]);
+const ackKey=x=>`${x?.date||x?.scheduled_date||''}|${x?.code||''}`;
+const acknowledged=x=>missedAcks().some(a=>(a.id&&x.id&&String(a.id)===String(x.id))||ackKey(a)===ackKey(x));
+const activeRows=s=>{const done=doneKeys(s);return (s.schedule||[]).filter(x=>ACTIVE.has(x.status)&&(x.code==='A'||x.code==='B')&&!done.has(`${x.date}|${x.code}`)&&!acknowledged(x)).sort((a,b)=>a.date.localeCompare(b.date))};
 const blocked=()=>new Set(read(BLOCKED,[]));
 const actionable=s=>{const expected=expectedCode(s),rows=activeRows(s);return rows.find(x=>x.code===expected)||rows[0]||null};
 let normalizing=false;
 
+function rememberMissed(item){
+  const list=missedAcks().filter(a=>!((a.id&&item.id&&String(a.id)===String(item.id))||ackKey(a)===ackKey(item)));
+  list.push({id:item.id||null,date:item.date,code:item.code,confirmed_at:new Date().toISOString()});
+  write(MISSED_ACK,list.slice(-30));
+}
 function isMonday(date){return pd(date).getDay()===1}
 function avoidDate(date){
   let out=date;const b=blocked();
@@ -75,67 +84,68 @@ function renderHero(){
 
 function mirrorRotation(s,rotation,ids){
   s.schedule=(s.schedule||[]).filter(x=>x.date<today()||!ACTIVE.has(x.status));
-  rotation.forEach((r,i)=>s.schedule.push({
-    id:`local-schedule-${Date.now()}-${i}`,
-    date:r.date,
-    scheduled_date:r.date,
-    code:r.code,
-    plan_workout_id:ids[r.code],
-    status:'planned'
-  }));
+  rotation.forEach((r,i)=>s.schedule.push({id:`local-schedule-${Date.now()}-${i}`,date:r.date,scheduled_date:r.date,code:r.code,plan_workout_id:ids[r.code],status:'planned'}));
   s.schedule.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
-  write(SNAP,s);
-  renderHero();
+  write(SNAP,s);renderHero();
 }
 
 async function writeRotation(s,rotation){
   const ids=planIds(s);if(!ids.A||!ids.B)throw new Error('Trainingsplan A/B fehlt.');
-  if(!online()){
-    mirrorRotation(s,rotation,ids);
-    return;
-  }
+  if(!online()){mirrorRotation(s,rotation,ids);return}
   const u=await user();
+  const del=await supabase.from('scheduled_workouts').delete().eq('user_id',u.id).gte('scheduled_date',today()).in('status',['planned','confirmed','started']);
+  if(del.error)throw del.error;
+  if(rotation.length){const ins=await supabase.from('scheduled_workouts').insert(rotation.map(r=>({user_id:u.id,plan_workout_id:ids[r.code],scheduled_date:r.date,status:'planned'})));if(ins.error)throw ins.error}
+  mirrorRotation(s,rotation,ids);
+}
+
+async function persistMissedAndRotation(s,item,value,code){
+  if(!navigator.onLine)throw new Error('Für das dauerhafte Verschieben brauchst du kurz eine Internetverbindung. Es wurde nichts als gespeichert bestätigt.');
+  const u=await user(),ids=planIds(s);
+  if(!ids.A||!ids.B)throw new Error('Trainingsplan A/B fehlt.');
+  const rotation=build(value,code);
+
+  let missedReq=supabase.from('scheduled_workouts').update({status:'skipped'}).eq('user_id',u.id);
+  if(item.id&&!String(item.id).startsWith('local-'))missedReq=missedReq.eq('id',item.id);
+  else missedReq=missedReq.eq('scheduled_date',item.date).eq('plan_workout_id',item.plan_workout_id||ids[item.code]);
+  const missed=await missedReq.select('id,status,scheduled_date,plan_workout_id');
+  if(missed.error)throw missed.error;
+  if(!missed.data?.length)throw new Error('Der ausgefallene Termin wurde in Supabase nicht gefunden. Der Dialog bleibt deshalb offen.');
+
   const del=await supabase.from('scheduled_workouts').delete().eq('user_id',u.id).gte('scheduled_date',today()).in('status',['planned','confirmed','started']);
   if(del.error)throw del.error;
   if(rotation.length){
     const ins=await supabase.from('scheduled_workouts').insert(rotation.map(r=>({user_id:u.id,plan_workout_id:ids[r.code],scheduled_date:r.date,status:'planned'})));
-    if(ins.error)throw ins.error;
+    if(ins.error){
+      await supabase.from('scheduled_workouts').update({status:'planned'}).eq('user_id',u.id).eq('id',missed.data[0].id);
+      throw ins.error;
+    }
   }
-  mirrorRotation(s,rotation,ids);
-}
 
-async function markMissedSkipped(item,s){
-  if(!item)return;
-  if(online()){
-    const u=await user();
-    let req=supabase.from('scheduled_workouts').update({status:'skipped'}).eq('user_id',u.id);
-    if(item.id&&!String(item.id).startsWith('local-'))req=req.eq('id',item.id);
-    else req=req.eq('scheduled_date',item.date).eq('plan_workout_id',item.plan_workout_id);
-    const res=await req.select('id,status,scheduled_date');
-    if(res.error)throw res.error;
-    if(!res.data?.length)throw new Error('Der ausgefallene Termin konnte in der Datenbank nicht markiert werden.');
-  }
-  const row=(s.schedule||[]).find(x=>String(x.id)===String(item.id))||(s.schedule||[]).find(x=>x.date===item.date&&x.code===item.code);
-  if(row)row.status='skipped';
+  const verify=await supabase.from('scheduled_workouts').select('*').eq('user_id',u.id).order('scheduled_date');
+  if(verify.error)throw verify.error;
+  const skipped=verify.data.find(r=>String(r.id)===String(missed.data[0].id)&&r.status==='skipped');
+  const first=rotation[0];
+  const firstSaved=!first||verify.data.some(r=>r.scheduled_date===first.date&&r.plan_workout_id===ids[first.code]&&ACTIVE.has(r.status));
+  if(!skipped||!firstSaved)throw new Error('Supabase hat die Änderung nicht vollständig bestätigt. Der Dialog bleibt offen.');
+
+  const codeById=Object.fromEntries(Object.entries(ids).map(([c,id])=>[id,c]));
+  s.schedule=verify.data.map(r=>({...r,date:r.scheduled_date,code:codeById[r.plan_workout_id]||null}));
   write(SNAP,s);
+  rememberMissed({id:skipped.id,date:skipped.scheduled_date,code:item.code});
+  localStorage.setItem(NORMALIZED,'1');
   renderHero();
 }
 
 async function normalizeAndExtend(force=false){
-  if(normalizing)return;
-  normalizing=true;
+  if(normalizing)return;normalizing=true;
   try{
     const s=snap(),rows=activeRows(s),expected=expectedCode(s),future=rows.filter(x=>x.date>=today());
     const anchor=future.find(x=>x.code===expected)?.date||future[0]?.date||today();
     if(force||needsRepair(s,rows)){
-      const rotation=build(anchor,expected);
-      await writeRotation(s,rotation);
-      localStorage.setItem(NORMALIZED,'1');
-      if(online())requestAppRefresh();
-      return;
+      const rotation=build(anchor,expected);await writeRotation(s,rotation);localStorage.setItem(NORMALIZED,'1');if(online())requestAppRefresh();return;
     }
-    const current=activeRows(s).filter(x=>x.date>=today());
-    if(!current.length){localStorage.removeItem(NORMALIZED);return}
+    const current=activeRows(s).filter(x=>x.date>=today());if(!current.length){localStorage.removeItem(NORMALIZED);return}
     if(current.at(-1).date>=horizonEnd())return;
     const tail=current.at(-1),extra=build(following(tail.date),other(tail.code));if(!extra.length)return;
     const ids=planIds(s);
@@ -157,16 +167,11 @@ function ensureMissedDialog(){
   q('[data-missed-save]',d).onclick=async()=>{
     const value=q('[data-missed-date]',d).value,status=q('[data-missed-status]',d),button=q('[data-missed-save]',d);
     if(!value||value<today()){status.textContent='Bitte heute oder ein zukünftiges Datum wählen.';return}
-    status.textContent='Wird dauerhaft gespeichert …';button.disabled=true;
+    status.textContent='Wird in Supabase gespeichert und geprüft …';button.disabled=true;
     try{
-      const s=snap(),item=actionable(s),code=expectedCode(s);
-      if(!item)throw new Error('Der offene Termin wurde nicht gefunden.');
-      await markMissedSkipped(item,s);
-      const rotation=build(value,code);
-      await writeRotation(s,rotation);
-      localStorage.setItem(NORMALIZED,'1');
-      d.close();renderHero();
-      if(online())requestAppRefresh();
+      const s=snap(),item=actionable(s),code=expectedCode(s);if(!item)throw new Error('Der offene Termin wurde nicht gefunden.');
+      await persistMissedAndRotation(s,item,value,code);
+      d.close();requestAppRefresh();
     }catch(e){status.textContent=e?.message||String(e);button.disabled=false}
   };
   return d;
@@ -189,7 +194,9 @@ function installBlockDays(){
   const head=q('.page-head>div:last-child',page)||q('.page-head',page),btn=document.createElement('button');btn.id='block-days-button';btn.className='secondary';btn.textContent='Blocktage';btn.style.marginLeft='8px';head.append(btn);
   let dialog=q('#block-days-dialog');if(!dialog){dialog=document.createElement('dialog');dialog.id='block-days-dialog';dialog.innerHTML='<div style="padding:18px;min-width:min(88vw,420px)"><div style="display:flex;justify-content:space-between;align-items:center"><div><small>PLANUNG</small><h2 style="margin:.2rem 0">Blocktage</h2></div><button type="button" data-block-close>Schließen</button></div><p style="color:#737973">An diesen Tagen plant die App kein Krafttraining.</p><div style="display:grid;grid-template-columns:1fr auto;gap:8px"><input type="date" data-block-date><button type="button" class="primary" data-block-add>Hinzufügen</button></div><small data-block-status style="display:block;margin-top:8px;color:#737973"></small><div data-block-list style="display:grid;gap:8px;margin-top:12px"></div></div>';document.body.append(dialog)}
   const render=()=>{const list=q('[data-block-list]',dialog),days=[...blocked()].sort();list.innerHTML=days.length?days.map(d=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 10px;border:1px solid #d8ddd8;border-radius:12px"><span>${d}</span><button type="button" data-block-remove="${d}">Entfernen</button></div>`).join(''):'<small>Noch keine Blocktage.</small>';dialog.querySelectorAll('[data-block-remove]').forEach(b=>b.onclick=()=>{write(BLOCKED,[...blocked()].filter(d=>d!==b.dataset.blockRemove));localStorage.removeItem(NORMALIZED);q('[data-block-status]',dialog).textContent='Kalender wird beim Schließen neu geplant.';render()})};
-  btn.onclick=()=>{q('[data-block-status]',dialog).textContent='';render();dialog.showModal()};q('[data-block-close]',dialog).onclick=()=>dialog.close();q('[data-block-add]',dialog).onclick=()=>{const value=q('[data-block-date]',dialog).value;if(!value)return;const set=blocked();if(set.has(value)){q('[data-block-status]',dialog).textContent='Dieser Tag ist bereits blockiert.';return}set.add(value);write(BLOCKED,[...set]);localStorage.removeItem(NORMALIZED);q('[data-block-status]',dialog).textContent='Kalender wird beim Schließen neu geplant.';render()};
+  btn.onclick=()=>{q('[data-block-status]',dialog).textContent='';render();dialog.showModal()};
+  q('[data-block-close]',dialog).onclick=()=>dialog.close();
+  q('[data-block-add]',dialog).onclick=()=>{const value=q('[data-block-date]',dialog).value;if(!value)return;const set=blocked();if(set.has(value)){q('[data-block-status]',dialog).textContent='Dieser Tag ist bereits blockiert.';return}set.add(value);write(BLOCKED,[...set]);localStorage.removeItem(NORMALIZED);q('[data-block-status]',dialog).textContent='Kalender wird beim Schließen neu geplant.';render()};
   dialog.addEventListener('close',()=>setTimeout(()=>normalizeAndExtend(true).catch(e=>{console.error('[GYM block days]',e);alert(`Blocktage konnten nicht übernommen werden: ${e.message}`)}),80));
 }
 
@@ -197,4 +204,5 @@ function install(){renderHero();installBlockDays();setTimeout(()=>normalizeAndEx
 document.addEventListener('click',interceptStart,true);
 window.addEventListener('pageshow',()=>{renderHero();setTimeout(()=>{maybeAskMissed();normalizeAndExtend().catch(()=>{})},600)});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){renderHero();setTimeout(()=>{maybeAskMissed();normalizeAndExtend().catch(()=>{})},600)}});
+window.addEventListener('gym:snapshot-hydrated',()=>{renderHero();setTimeout(maybeAskMissed,100)});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
